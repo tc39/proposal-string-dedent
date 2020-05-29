@@ -190,6 +190,10 @@ const getMarkdown = () => {
 };
 </pre>
 
+## Implementations
+
+A very basic POC polyfill for babel is implemented [in this repo](./packages/babel-plugin-proposal-multi-backtick-templates/plugin.js), mostly as a strawman to make it easier to discuss the particulars of how indenting should work - see the [tests](./packages/babel-plugin-proposal-multi-backtick-templates/plugin.test.js) for examples.
+
 ## Q&A
 
 ### Is this backwards compatible?
