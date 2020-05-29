@@ -36,7 +36,4 @@ jspm_packages
 # Optional REPL history
 .node_repl_history
 
-# Only apps should have lockfiles
-yarn.lock
-package-lock.json
-npm-shrinkwrap.json
+# lockfile not ignored: https://classic.yarnpkg.com/blog/2016/11/24/lockfiles-for-all/
