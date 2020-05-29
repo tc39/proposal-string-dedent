@@ -43,13 +43,14 @@ class MyClass {
 
 This prints:
 
-```sql
+<pre>
+
       create table student(
         id int primary key
         name text
       )
       
-```
+</pre>
 
 Note the newlines at the start and end of the output, and a margin on each line.
 
