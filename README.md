@@ -137,12 +137,21 @@ class MyClass {
   print() {
     console.log(```
       create table student(
-        id int primary key
+        id int primary key,
         name text
       )
     ```)
   }
 }
+</pre>
+
+This will output the template with margins stripped:
+
+<pre>
+create table student(
+  id int primary key,
+  name text
+)
 </pre>
 
 Custom expressions would work without any special handling:
