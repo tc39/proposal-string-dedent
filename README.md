@@ -1,6 +1,6 @@
 # Multi backtick templates with automatic margin stripping
 
-Author: @mmkal
+Author: [@mmkal](https://github.com/mmkal)
 
 Status: 0?
 
@@ -180,6 +180,45 @@ const getMarkdown = () => {
 };
 </pre>
 
+## Q&A
+
+### Is this backwards compatible?
+
+This could be partially implemented with no syntax changes, since it's technically already valid syntax:
+
+<pre>
+```foo```
+</pre>
+
+Is equivalent to
+
+<pre>
+((``)`foo`)``
+</pre>
+
+Where the empty-strings are being used as tagged template functions. i.e. when run, this code will try to use the empty string
+
+<pre>
+(``)
+</pre>
+
+as an template tag, passing in `'abc'`, the return value of which is then used as another es string tag which receives the empty string. Obviously, none of that will currently work at runtime, because an empty string is not a function. So no functioning code should be affected by this change.
+
+Some parsing changes would be needed to allow for unescaped backticks inside triple-backticked templates.
+
+### Why not use a library?
+
+To summarise the [problem](#problem) section above:
+- avoid a dependency for the  desired behaviour of the vast majority of multiline strings (dedent has millions of downloads per week)
+- make code snippets more portable
+- improved performance
+- better discoverability - the feature can be documented publicly, and used in code samples which wouldn't otherwise rely on a package like dedent, which is on major version 0 without an update in three years
+- establish a standard that can be adopted by JSON-superset implementations like [json5](https://npmjs.com/package/json5)
+- give code generators a way to output readable code with correct indentation properties (e.g. jest inline snapshots)
+- support "dedenting" tagged template literal functions with customized expression parameter behaviour (e.g. [slonik](https://npmjs.com/package/slonik)
+- allow formatters/linters to safely enforce code style without needing to be coupled to the runtime behaviour of multiple libraries in combination
+
+<!--
 
 # template-for-proposals
 
@@ -212,6 +251,7 @@ Follow these steps:
       chmod +x .git/hooks/post-rewrite
       ```
 -->
+<!--
   1.  ["How to write a good explainer"][explainer] explains how to make a good first impression.
 
       > Each TC39 proposal should have a `README.md` file which explains the purpose
