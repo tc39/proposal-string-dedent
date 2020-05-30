@@ -14,7 +14,6 @@ The current options:
 
 ### Strange-looking code
 
-<pre>
 ```javascript
 class MyClass {
   print() {
@@ -24,7 +23,7 @@ class MyClass {
 )`)
   }
 }
-</pre>
+```
 
 ### Sensible-looking code, with unwanted indents in output
 
