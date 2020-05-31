@@ -51,6 +51,29 @@ class MyClass {
 `,
     },
     {
+      title: 'strips first and last lines when margin is zero',
+      code: `
+class MyClass {
+  print() {
+    console.log(\`\`\`
+yaml:
+  is:
+    supported: nicely
+\`\`\`);
+  }
+}
+`,
+      output: `
+class MyClass {
+  print() {
+    console.log(\`yaml:
+  is:
+    supported: nicely\`);
+  }
+}
+`,
+    },
+    {
       title: 'dedents with tabs for source indent and spaces for template indent',
       code: `
 class MyClass {
@@ -354,6 +377,41 @@ class MyClass {
   print() {
     console.log(\`text
 not followed by newline\`);
+  }
+}
+`,
+    },
+    {
+      title: 'empty block with newline',
+      code: `
+class MyClass {
+  print() {
+    console.log(\`\`\`
+    \`\`\`);
+  }
+}
+`,
+      output: `
+class MyClass {
+  print() {
+    console.log(\`\`);
+  }
+}
+`,
+    },
+    {
+      title: 'empty block without newline',
+      code: `
+class MyClass {
+  print() {
+    console.log(\`\`\`\`\`\`);
+  }
+}
+`,
+      output: `
+class MyClass {
+  print() {
+    console.log(\`\`);
   }
 }
 `,
