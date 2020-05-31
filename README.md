@@ -123,11 +123,12 @@ It'd be better this could be supported at the language level, to avoid:
 Allow specifying triple-, quintuple, or septuple, or any-odd-number-uple backtick-delimited literals, which behave almost the same as a regular backticked template literal, with a few key differences:
 
 - The string is automatically "dedented", along the lines of what the dedent library does. A simple strawman algorithm:
-  - the first and last lines (the ones including delimiters) are ignored
+  - the first line (including the opening delimiter) is ignored
+  - the last line (including the closing delimiter) is ignored if it contains only whitespace
   - the "margin" is calculated using the whitespace at the beginning of the first line after the opening delimiter
   - that margin is removed from the start of every line
-- The opening delimiter must be immediately followed by a newline
-- The closing delimiter must only contain whitespace between it and the previous newline
+- The opening delimiter must be immediately followed by a newline or the closing delimiter
+- The closing delimiter should only contain whitespace between it and the previous newline
 - Backticks inside the string don't need to be escaped
 
 The examples above would simplify to something like this:
