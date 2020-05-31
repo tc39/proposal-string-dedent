@@ -189,6 +189,12 @@ const getMarkdown = () => {
 };
 </pre>
 
+## In other languages
+
+- *Java* - [text blocks](https://openjdk.java.net/jeps/378) using triple-quotes
+- *Scala* - [multiline strings](https://docs.scala-lang.org/overviews/scala-book/two-notes-about-strings.html) using triple-quotes and `.stripMargin`
+- *Jsonnet* - [text blocks](https://jsonnet.org/learning/tutorial.html) with `|||` as a delimiter
+
 ## Implementations
 
 A very basic POC polyfill for babel is implemented [in this repo](./packages/babel-plugin-proposal-multi-backtick-templates/plugin.js), mostly as a strawman to make it easier to discuss the particulars of how indenting should work - so it's as-yet unpublished.
@@ -199,7 +205,6 @@ See the [tests](./packages/babel-plugin-proposal-multi-backtick-templates/plugin
 
 - babel parser plugin allowing for unescaped backticks
 - a patch to typescript library types, since typescript will get upset about trying to use template literal tag as a template literal tag.
-- [for this readme] prior art - python, java and scala have similar features
 
 ## Q&A
 
