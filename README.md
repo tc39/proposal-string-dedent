@@ -2,7 +2,7 @@
 
 Author: [@mmkal](https://github.com/mmkal)
 
-Status: 0?
+Status: draft
 
 [Original TC39 thread](https://es.discourse.group/t/triple-backtick-template-literal-with-indentation-support/337/6)
 
