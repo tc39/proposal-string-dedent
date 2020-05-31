@@ -214,13 +214,13 @@ See the [tests](./packages/babel-plugin-proposal-multi-backtick-templates/plugin
 This could be partially implemented with no syntax changes, since it's technically already valid syntax:
 
 <pre>
-```foo```
+```abc```
 </pre>
 
 Is equivalent to
 
 <pre>
-((``)`foo`)``
+((``)`abc`)``
 </pre>
 
 Where the empty-strings are being used as tagged template functions. i.e. when run, this code will try to use the empty string
