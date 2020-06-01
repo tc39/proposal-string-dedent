@@ -352,14 +352,14 @@ class MyClass {
       code: `
 class MyClass {
   print() {
-    console.log(\`\`\`
+    console.log(\`\`\`\`
       abc
     \`\`\`\`);
   }
 }
 `,
       // this is just a babel parse error; the test is here to explicitly show that even numbers aren't supported.
-      error: /Unterminated template/,
+      error: /Unexpected token/,
     },
     {
       title: 'Multi-backtick template literals with no whitespace before closing backticks',
