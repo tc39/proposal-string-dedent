@@ -12,6 +12,7 @@ jobs:
       with:
         node-version: '12.x'
     - run: npm install
+    - run: npm test
     - run: npm run build
     - name: commit changes
       uses: elstudio/actions-js-build/commit@v3
