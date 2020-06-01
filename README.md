@@ -199,6 +199,7 @@ const getMarkdown = () => {
 - *Jsonnet* - [text blocks](https://jsonnet.org/learning/tutorial.html) with `|||` as a delimiter
 - *Bash* - [`<<-` Heredocs](https://linuxhint.com/bash-heredoc-tutorial/)
 - *Ruby* - [`<<~` Heredocs](https://www.rubyguides.com/2018/11/ruby-heredoc/)
+- *Swift* - [multiline string literals](https://github.com/mmkal/proposal-multi-backtick-templates) using triple-quotes - strips margin based on whitespace before closing delimiter
 
 ## Implementations
 
