@@ -242,35 +242,6 @@ class MyClass {
     console.log(sql\`\`\`\`\`\`\`\`\`
       select *
       from abc
-      where id = \${something}
-      \tand name = \${somethingElse}
-      \tand another_column = \${yetAnotherThing}
-      limit \${limit}
-    \`\`\`\`\`\`\`\`\`);
-  }
-}
-`,
-      output: `
-class MyClass {
-  print() {
-    console.log(sql\`select *
-from abc
-where id = \${something}
-\tand name = \${somethingElse}
-\tand another_column = \${yetAnotherThing}
-limit \${limit}\`);
-  }
-}
-`,
-    },
-    {
-      title: 'tagged templates with more than three backticks and newlines in middle of template',
-      code: `
-class MyClass {
-  print() {
-    console.log(sql\`\`\`\`\`\`\`\`\`
-      select *
-      from abc
       where id = \${something} and name = \${somethingElse}
       \tand another_column = \${yetAnotherThing}
       limit \${limit}
