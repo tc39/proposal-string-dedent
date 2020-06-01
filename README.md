@@ -197,6 +197,8 @@ const getMarkdown = () => {
 - *Scala* - [multiline strings](https://docs.scala-lang.org/overviews/scala-book/two-notes-about-strings.html) using triple-quotes and `.stripMargin`
 - *Python* - [multiline strings](https://docs.python.org/3/library/textwrap.html) using triple-quotes to avoid escaping and `textwrap.dedent`
 - *Jsonnet* - [text blocks](https://jsonnet.org/learning/tutorial.html) with `|||` as a delimiter
+- *Bash* - [`<<-` Heredocs](https://linuxhint.com/bash-heredoc-tutorial/)
+- *Ruby* - [`<<~` Heredocs](https://www.rubyguides.com/2018/11/ruby-heredoc/)
 
 ## Implementations
 
