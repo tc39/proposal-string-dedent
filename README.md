@@ -117,6 +117,11 @@ It'd be better this could be supported at the language level, to avoid:
   - <pre>dedent`...`</pre>
   - <pre>dedent(anything)`...`</pre>
   - <pre>.toMatchInlineSnapshot(`...`)</pre>
+  
+There are several other libraries which each have a very similar purpose (and each behave slightly differently). Some examples:
+- https://www.npmjs.com/package/trim-margin
+- https://www.npmjs.com/package/stripmargin
+- https://www.npmjs.com/package/indent-string
 
 ## Proposed solution
 
