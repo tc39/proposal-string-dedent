@@ -160,7 +160,7 @@ create table student(
 )
 </pre>
 
-Custom expressions would work without any special handling:
+Custom expressions would work without any special composition of tag template functions:
 
 <pre>
 const query = sql```
@@ -252,7 +252,7 @@ To summarise the [problem](#problem) section above:
 - better discoverability - the feature can be documented publicly, and used in code samples which wouldn't otherwise rely on a package like dedent, which is on major version 0 without an update in three years
 - establish a standard that can be adopted by JSON-superset implementations like [json5](https://npmjs.com/package/json5)
 - give code generators a way to output readable code with correct indentation properties (e.g. jest inline snapshots)
-- support "dedenting" tagged template literal functions with customized expression parameter behaviour (e.g. [slonik](https://npmjs.com/package/slonik)
+- support "dedenting" tagged template literal functions with customized expression parameter behaviour (e.g. [slonik](https://npmjs.com/package/slonik))
 - allow formatters/linters to safely enforce code style without needing to be coupled to the runtime behaviour of multiple libraries in combination
 
 <!--
