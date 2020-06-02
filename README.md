@@ -1,5 +1,7 @@
 # Multi backtick templates with automatic margin stripping
 
+Champion: [@jridgewell](https://github.com/jridgewell)
+
 Author: [@mmkal](https://github.com/mmkal)
 
 Status: draft
