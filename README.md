@@ -198,6 +198,15 @@ const getMarkdown = () => {
 };
 </pre>
 
+Inconsistent margins are an early error:
+
+<pre>
+const invalid = ```
+  The first line determines the margin
+and following lines must start with that whitespace prefix.
+```
+</pre>
+
 ## In other languages
 
 - *Java* - [text blocks](https://openjdk.java.net/jeps/378) using triple-quotes
