@@ -198,12 +198,12 @@ const getMarkdown = () => {
 };
 </pre>
 
-Inconsistent margins are an early error:
+The behavior when later lines lack the whitespace prefix of the first line, is not yet defined:
 
 <pre>
-const invalid = ```
-  The first line determines the margin
-and following lines must start with that whitespace prefix.
+const tbd = ```
+  The first line starts with two spaces
+but a later line doesn't.
 ```
 </pre>
 
