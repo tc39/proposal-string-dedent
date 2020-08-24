@@ -198,6 +198,15 @@ const getMarkdown = () => {
 };
 </pre>
 
+The behavior when later lines lack the whitespace prefix of the first line, is not yet defined:
+
+<pre>
+const tbd = ```
+  The first line starts with two spaces
+but a later line doesn't.
+```
+</pre>
+
 ## In other languages
 
 - *Java* - [text blocks](https://openjdk.java.net/jeps/378) using triple-quotes
