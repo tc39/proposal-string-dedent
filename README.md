@@ -1,6 +1,6 @@
 # Multi backtick templates with automatic margin stripping
 
-Champion: [@jridgewell](https://github.com/jridgewell)
+Champions: [@jridgewell](https://github.com/jridgewell), [@hemanth](https://github.com/hemanth)
 
 Author: [@mmkal](https://github.com/mmkal)
 
