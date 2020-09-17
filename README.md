@@ -213,7 +213,7 @@ but a later line doesn't.
 - *Scala* - [multiline strings](https://docs.scala-lang.org/overviews/scala-book/two-notes-about-strings.html) using triple-quotes and `.stripMargin`
 - *Python* - [multiline strings](https://docs.python.org/3/library/textwrap.html) using triple-quotes to avoid escaping and `textwrap.dedent`
 - *Jsonnet* - [text blocks](https://jsonnet.org/learning/tutorial.html) with `|||` as a delimiter
-- *Bash* - [`<<-` Heredocs](https://linuxhint.com/bash-heredoc-tutorial/)
+- *Bash* - [`<<-` Heredocs](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_07_04)
 - *Ruby* - [`<<~` Heredocs](https://www.rubyguides.com/2018/11/ruby-heredoc/)
 - *Swift* - [multiline string literals](https://github.com/mmkal/proposal-multi-backtick-templates) using triple-quotes - strips margin based on whitespace before closing delimiter
 
