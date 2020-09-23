@@ -4,8 +4,7 @@
   "description": "TC39 Proposal for multi-backtick templates with automatic margin stripping.",
   "scripts": {
     "build": "ecmarkup spec.emu index.html",
-    "start": "npm run build -- --watch",
-    "test": "jest"
+    "start": "npm run build -- --watch"
   },
   "homepage": "https://github.com/mmkal/proposal-multi-backtick-templates#readme",
   "repository": {
@@ -14,10 +13,6 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@babel/core": "^7.10.1",
-    "babel-plugin-tester": "^9.2.0",
-    "ecmarkup": "^3.19.1",
-    "jest": "^26.0.1",
-    "lerna": "^3.22.0"
+    "ecmarkup": "^3.19.1"
   }
 }
