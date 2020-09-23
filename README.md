@@ -1,4 +1,4 @@
-# Multi backtick templates with automatic margin stripping
+# String dedent
 
 Champions: [@jridgewell](https://github.com/jridgewell), [@hemanth](https://github.com/hemanth)
 
