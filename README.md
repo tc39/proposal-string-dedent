@@ -217,6 +217,32 @@ but a later line doesn't.
 - *Ruby* - [`<<~` Heredocs](https://www.rubyguides.com/2018/11/ruby-heredoc/)
 - *Swift* - [multiline string literals](https://github.com/mmkal/proposal-multi-backtick-templates) using triple-quotes - strips margin based on whitespace before closing delimiter
 
+## Syntax Alternatives Considered
+
+Some potential alternatives to the multi-backtick syntax:
+
+- A built-in runtime method along the lines of the `dedent` library, e.g. `String.dedent`:
+  - Pros:
+    - Easier to implement
+    - No new syntax
+  - Cons:
+    - Non-zero runtime impact (though less than a js library)
+    - Open question of whether [isTemplateObject](https://github.com/tc39/proposal-array-is-template-object) would propagate to the output, and [whether this could introduce a security vulnerability](https://github.com/mmkal/proposal-multi-backtick-templates/pull/5#discussion_r441894983)
+    - More verbose
+    - Lends itself less well to ecmascript-compatible data formats like json5 and forks aiming at modern es features like [json6](https://github.com/d3x0r/JSON6), [jsox](https://github.com/d3x0r/JSOX), [jsonext](https://github.com/jordanbtucker/jsonext) and [ESON](https://github.com/mmkal/eson)
+- Triple-backticks only (not five, or seven, or 2n+1):
+  - Pros:
+    - Simpler implementation and documentation
+  - Cons:
+    - Triple-backticks within templates would need to be escaped
+- Using another character for dedentable templates, e.g. `|||`
+  - Pros:
+    - Should be easy to select a character which would be a syntax error currently, so the risk even of very contrived breaking changes could go to near-zero
+    - Could match existing languages with similar features, e.g. jsonnet
+    - More intuitive difference from single-backticks
+  - Cons:
+    - Less intuitive similarities to single-backticks, wouldn't be as obvious that tagged template literals should work
+
 ## Implementations
 
 A very basic POC polyfill for babel is implemented [in this repo](./packages/babel-plugin-proposal-multi-backtick-templates/plugin.js), mostly as a strawman to make it easier to discuss the particulars of how indenting should work - so it's as-yet unpublished.
