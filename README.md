@@ -227,7 +227,7 @@ Some potential alternatives to the multi-backtick syntax:
     - No new syntax
   - Cons:
     - Non-zero runtime impact (though less than a js library)
-    - Unclear how/whether it could work with tagged template literals
+    - Open question of whether [isTemplateObject](https://github.com/tc39/proposal-array-is-template-object) would propagate to the output, and [whether this could introduce a security vulnerability](https://github.com/mmkal/proposal-multi-backtick-templates/pull/5#discussion_r441894983)
     - More verbose
     - Lends itself less well to ecmascript-compatible data formats like json5 and forks aiming at modern es features like [json6](https://github.com/d3x0r/JSON6), [jsox](https://github.com/d3x0r/JSOX), [jsonext](https://github.com/jordanbtucker/jsonext) and [ESON](https://github.com/mmkal/eson)
 - Triple-backticks only (not five, or seven, or 2n+1):
