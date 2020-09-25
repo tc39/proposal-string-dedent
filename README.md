@@ -124,6 +124,7 @@ There are several other libraries which each have a very similar purpose (and ea
 - https://www.npmjs.com/package/strip-indent
 - https://www.npmjs.com/package/trim-margin
 - https://www.npmjs.com/package/stripmargin
+- https://www.npmjs.com/package/string-dedent
 
 ## Proposed solution
 
@@ -242,17 +243,6 @@ Some potential alternatives to the multi-backtick syntax:
     - More intuitive difference from single-backticks
   - Cons:
     - Less intuitive similarities to single-backticks, wouldn't be as obvious that tagged template literals should work
-
-## Implementations
-
-A very basic POC polyfill for babel is implemented [in this repo](./packages/babel-plugin-proposal-multi-backtick-templates/plugin.js), mostly as a strawman to make it easier to discuss the particulars of how indenting should work - so it's as-yet unpublished.
-
-See the [tests](./packages/babel-plugin-proposal-multi-backtick-templates/plugin.test.js) for proposed functionality - that is, how triple-backticks can be transpiled to current ecmascript. These don't include any parsing changes, so there are no examples of unescaped backticks inside templates.
-
-## TODO
-
-- babel parser plugin allowing for unescaped backticks
-- a patch to typescript library types, since typescript will get upset about trying to use template literal tag as a template literal tag.
 
 ## Q&A
 
