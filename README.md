@@ -217,6 +217,7 @@ but a later line doesn't.
 - *Bash* - [`<<-` Heredocs](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_07_04)
 - *Ruby* - [`<<~` Heredocs](https://www.rubyguides.com/2018/11/ruby-heredoc/)
 - *Swift* - [multiline string literals](https://github.com/mmkal/proposal-multi-backtick-templates) using triple-quotes - strips margin based on whitespace before closing delimiter
+* _PHP_  - `<<<` [heredoc/nowdoc](https://wiki.php.net/rfc/flexible_heredoc_nowdoc_syntaxes#closing_marker_indentation)  The indentation of the closing marker dictates the amount of whitespace to strip from each line.
 
 ## Syntax Alternatives Considered
 
