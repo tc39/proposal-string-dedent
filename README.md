@@ -10,7 +10,7 @@ Status: draft
 
 ## Problem
 
-Javascript template literals force users to choose between strange-looking code, have the resultant outputs include unwanted indentation, or rely on third-party dependencies to "fix" template margins. They also require escaping backticks, limiting the ability to put code samples inside templates for languages which include backticks (e.g. javascript/markdown/bash).
+The current syntax forces users to choose between strange-looking unindented template literals, template literals containing unwanted indentation, or relying on third-party dependencies to "fix" template margins. They also require escaping backticks, limiting the ability to put code samples inside templates for languages which include backticks (e.g. javascript/markdown/bash).
 
 The current options:
 
@@ -27,7 +27,7 @@ class MyClass {
 }
 ```
 
-### Sensible-looking code, with unwanted indents in output
+### Sensible-looking code, with unwanted indents in output string
 
 ```javascript
 class MyClass {
@@ -42,7 +42,7 @@ class MyClass {
 }
 ```
 
-This prints:
+This logs:
 
 <pre>
 
@@ -53,11 +53,11 @@ This prints:
       
 </pre>
 
-Note the newlines at the start and end of the output, and a margin on each line.
+Note the newlines at the start and the end of the string, and a margin on each line.
 
 ### With a library
 
-A commonly used one is [dedent](https://npmjs.com/package/dedent):
+A commonly used library is [dedent](https://npmjs.com/package/dedent):
 
 ```javascript
 import dedent from 'dedent'
@@ -74,7 +74,7 @@ class MyClass {
 }
 ```
 
-Now the input and output look about right, but we've had to add a runtime dependency. This makes what could be pure data less portable. You can no longer copy-paste snippets, you have to copy-paste snippets, install an npm package, maybe install the types too, import it and then use it. This solution also cannot be used in ecmascript-compatible data formats like [json5](https://npmjs.com/package/json5).
+Now both the code and the resulting output look about right, but we had to add a runtime dependency. This makes what could be pure data less portable. You can no longer copy-paste snippets without installing an npm package, possibly installing the types too, then importing and using it. This solution also cannot be used in ecmascript-compatible data formats like [json5](https://npmjs.com/package/json5).
 
 Similarly, [jest-inline-snapshots](https://jestjs.io/docs/en/snapshot-testing#inline-snapshots) automatically "dedent" literal snapshots at runtime. There is also a [babel plugin](https://www.npmjs.com/package/babel-plugin-dedent) which moves the "dedenting" to compile-time.
 
@@ -128,7 +128,7 @@ There are several other libraries which each have a very similar purpose (and ea
 
 ## Proposed solution
 
-Allow specifying triple-, quintuple, or septuple, or any-odd-number-uple backtick-delimited literals, which behave almost the same as a regular backticked template literal, with a few key differences:
+Allow specifying triple-, quintuple, or septuple, or any-odd-number-uple backtick-delimited literals, which behave almost the same as a regular single backticked template literal, with a few key differences:
 
 - The string is automatically "dedented", along the lines of what the dedent library does. A simple strawman algorithm:
   - the first line (including the opening delimiter) is ignored
@@ -139,7 +139,7 @@ Allow specifying triple-, quintuple, or septuple, or any-odd-number-uple backtic
 - The closing delimiter should only contain whitespace between it and the previous newline
 - Backticks inside the string don't need to be escaped
 
-The examples above would simplify to something like this:
+The examples above would be solved like this:
 
 <pre>
 class MyClass {
