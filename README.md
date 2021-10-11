@@ -46,11 +46,11 @@ This logs:
 
 ```sql
 
-create table student(
-  id int primary key
-  name text
-)
-      
+      create table student(
+        id int primary key
+        name text
+      )
+    
 ```
 
 Note the newlines at the start and the end of the string, and a margin on each line.
