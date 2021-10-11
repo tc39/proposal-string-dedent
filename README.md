@@ -46,10 +46,10 @@ This logs:
 
 ```sql
 
-      create table student(
-        id int primary key
-        name text
-      )
+create table student(
+  id int primary key
+  name text
+)
       
 ```
 
