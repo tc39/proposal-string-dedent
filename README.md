@@ -44,14 +44,14 @@ class MyClass {
 
 This logs:
 
-<pre>
+```sql
 
       create table student(
         id int primary key
         name text
       )
       
-</pre>
+```
 
 Note the newlines at the start and the end of the string, and a margin on each line.
 
@@ -80,7 +80,7 @@ Similarly, [jest-inline-snapshots](https://jestjs.io/docs/en/snapshot-testing#in
 
 This presents a problem when template expression tags also need to be used:
 
-<pre>
+```javascript
 const raw = dedent`
   query foo {
     bar
@@ -88,7 +88,7 @@ const raw = dedent`
 `;
 
 gql`${raw}`; // <- this doesn't work right.
-</pre>
+```
 
 To get around this, we have to rely on the tagged template being callable as a regular function:
 
@@ -141,7 +141,7 @@ Allow specifying triple-, quintuple, or septuple, or any-odd-number-uple backtic
 
 The examples above would be solved like this:
 
-<pre>
+```javascript
 class MyClass {
   print() {
     console.log(```
@@ -152,20 +152,20 @@ class MyClass {
     ```)
   }
 }
-</pre>
+```
 
 This will output the template with margins stripped:
 
-<pre>
+```sql
 create table student(
   id int primary key,
   name text
 )
-</pre>
+```
 
 Custom expressions would work without any special composition of tag template functions:
 
-<pre>
+<pre lang="javascript">
 const query = sql```
   select *
   from studients
@@ -175,17 +175,17 @@ const query = sql```
 
 We can also avoid the need for escaping backticks when they're needed inside the template:
 
-<pre>
+```javascript
 const printBashCommand = () => {
   console.log(```
     ./some-bash-script.sh `ls`
   ```);
 };
-</pre>
+```
 
 Using more backticks allows for triple-backticks inside templates without escaping:
 
-<pre>
+```javascript
 const getMarkdown = () => {
   return `````
     # blah blah
@@ -197,11 +197,11 @@ const getMarkdown = () => {
     some _more_ *markdown*
   `````;
 };
-</pre>
+```
 
 The behavior when later lines lack the whitespace prefix of the first line, is not yet defined:
 
-<pre>
+<pre lang="javascript">
 const tbd = ```
   The first line starts with two spaces
 but a later line doesn't.
@@ -251,21 +251,21 @@ Some potential alternatives to the multi-backtick syntax:
 
 This could be partially implemented with no syntax changes, since it's technically already valid syntax:
 
-<pre>
+<pre lang="javascript">
 ```abc```
 </pre>
 
 Is equivalent to
 
-<pre>
+```javascript
 ((``)`abc`)``
-</pre>
+```
 
 Where the empty-strings are being used as tagged template functions. i.e. when run, this code will try to use the empty string
 
-<pre>
+```javascript
 (``)
-</pre>
+```
 
 as an template tag, passing in `'abc'`, the return value of which is then used as another es string tag which receives the empty string. Obviously, none of that will currently work at runtime, because an empty string is not a function. So no functioning code should be affected by this change.
 
