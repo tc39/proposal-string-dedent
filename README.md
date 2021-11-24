@@ -128,7 +128,7 @@ There are several other libraries which each have a very similar purpose (and ea
 
 ## Proposed solution
 
-Allow specifying triple-, quintuple, or septuple, or any-odd-number-uple backtick-delimited literals, which behave almost the same as a regular single backticked template literal, with a few key differences:
+Allow prefixing backticks with `@`, for a template literal behaving almost the same as a regular single backticked template literal, with a few key differences:
 
 - The string is automatically "dedented", along the lines of what the dedent library does. A simple strawman algorithm:
   - the first line (including the opening delimiter) is ignored
@@ -137,19 +137,18 @@ Allow specifying triple-, quintuple, or septuple, or any-odd-number-uple backtic
   - that margin is removed from the start of every line
 - The opening delimiter must be immediately followed by a newline or the closing delimiter
 - The closing delimiter should only contain whitespace between it and the previous newline
-- Backticks inside the string don't need to be escaped
 
 The examples above would be solved like this:
 
 ```javascript
 class MyClass {
   print() {
-    console.log(```
+    console.log(@`
       create table student(
         id int primary key,
         name text
       )
-    ```)
+    `)
   }
 }
 ```
@@ -166,46 +165,20 @@ create table student(
 Custom expressions would work without any special composition of tag template functions:
 
 <pre lang="javascript">
-const query = sql```
+const query = sql@`
   select *
   from studients
   where name = ${name}
-```
+`
 </pre>
-
-We can also avoid the need for escaping backticks when they're needed inside the template:
-
-```javascript
-const printBashCommand = () => {
-  console.log(```
-    ./some-bash-script.sh `ls`
-  ```);
-};
-```
-
-Using more backticks allows for triple-backticks inside templates without escaping:
-
-```javascript
-const getMarkdown = () => {
-  return `````
-    # blah blah
-
-    ```json
-    { "foo": "bar" }
-    ```
-
-    some _more_ *markdown*
-  `````;
-};
-```
 
 The behavior when later lines lack the whitespace prefix of the first line, is not yet defined:
 
 <pre lang="javascript">
-const tbd = ```
+const tbd = @`
   The first line starts with two spaces
 but a later line doesn't.
-```
+`
 </pre>
 
 ## In other languages
@@ -221,7 +194,7 @@ but a later line doesn't.
 
 ## Syntax Alternatives Considered
 
-Some potential alternatives to the multi-backtick syntax:
+Some potential alternatives to the `@`-backtick-prefix syntax:
 
 - A built-in runtime method along the lines of the `dedent` library, e.g. `String.dedent`:
   - Pros:
@@ -232,11 +205,11 @@ Some potential alternatives to the multi-backtick syntax:
     - Open question of whether [isTemplateObject](https://github.com/tc39/proposal-array-is-template-object) would propagate to the output, and [whether this could introduce a security vulnerability](https://github.com/mmkal/proposal-multi-backtick-templates/pull/5#discussion_r441894983)
     - More verbose
     - Lends itself less well to ecmascript-compatible data formats like json5 and forks aiming at modern es features like [json6](https://github.com/d3x0r/JSON6), [jsox](https://github.com/d3x0r/JSOX), [jsonext](https://github.com/jordanbtucker/jsonext) and [ESON](https://github.com/mmkal/eson)
-- Triple-backticks only (not five, or seven, or 2n+1):
+- Triple-backticks:
   - Pros:
-    - Simpler implementation and documentation
+    - Backticks within templates would not need to be escaped
   - Cons:
-    - Triple-backticks within templates would need to be escaped
+    - Technically not backwards-compatible. Could break some [real code in the wild](https://github.com/tc39/proposal-string-dedent/issues/8#issuecomment-678731612).
 - Using another character for dedentable templates, e.g. `|||`
   - Pros:
     - Should be easy to select a character which would be a syntax error currently, so the risk even of very contrived breaking changes could go to near-zero
@@ -247,29 +220,9 @@ Some potential alternatives to the multi-backtick syntax:
 
 ## Q&A
 
-### Is this backwards compatible?
+### Is this compatible with the [decorators proposal](https://github.com/tc39/proposal-decorators)?
 
-This could be partially implemented with no syntax changes, since it's technically already valid syntax:
-
-<pre lang="javascript">
-```abc```
-</pre>
-
-Is equivalent to
-
-```javascript
-((``)`abc`)``
-```
-
-Where the empty-strings are being used as tagged template functions. i.e. when run, this code will try to use the empty string
-
-```javascript
-(``)
-```
-
-as an template tag, passing in `'abc'`, the return value of which is then used as another es string tag which receives the empty string. Obviously, none of that will currently work at runtime, because an empty string is not a function. So no functioning code should be affected by this change.
-
-Some parsing changes would be needed to allow for unescaped backticks inside triple-backticked templates.
+Yes, since decorators require that `@` be the prefix for a valid identifier, meaning it cannot precede a backtick/template literal.
 
 ### Why not use a library?
 
