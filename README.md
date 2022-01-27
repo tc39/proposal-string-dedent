@@ -121,6 +121,7 @@ It'd be better this could be supported at the language level, to avoid:
   - <pre>.toMatchInlineSnapshot(`...`)</pre>
   
 There are several other libraries which each have a very similar purpose (and each behave slightly differently). Some examples:
+- https://github.com/sindresorhus/eslint-plugin-unicorn/blob/main/docs/rules/template-indent.md
 - https://www.npmjs.com/package/strip-indent
 - https://www.npmjs.com/package/trim-margin
 - https://www.npmjs.com/package/stripmargin
