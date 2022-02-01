@@ -115,6 +115,8 @@ user generated exploit string).
 
 ## Proposed solution
 
+Play around with a [REPL](https://output.jsbin.com/wiwovot/quiet) implementation.
+
 Allow prefixing backticks with `@`, for a template literal behaving almost the
 same as a regular single backticked template literal, with a few key
 differences:
