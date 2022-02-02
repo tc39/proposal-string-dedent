@@ -18,7 +18,7 @@ class MyClass {
   print() {
     console.log(`
       create table student(
-        id int primary key
+        id int primary key,
         name text
       )
     `);
@@ -31,7 +31,7 @@ This outputs (using `^` to mark the beginning of a line and `·` to mark a leadi
 ```sql
 ^
 ^······create table student(
-^······  id int primary key
+^······  id int primary key,
 ^······  name text
 ^······)
 ^····
@@ -43,7 +43,7 @@ In order to for the output to look sensible, our code becomes illegible:
 class MyClass {
   print() {
     console.log(`create table student(
-  id int primary key
+  id int primary key,
   name text
 )`);
   }
@@ -54,7 +54,7 @@ This outputs a sensible:
 
 ```sql
 create table student(
-  id int primary key
+  id int primary key,
   name text
 )
 ```
@@ -71,7 +71,7 @@ class MyClass {
   print() {
     console.log(dedent`
       create table student(
-        id int primary key
+        id int primary key,
         name text
       )
     `);
@@ -83,7 +83,7 @@ This outputs the sensible:
 
 ```sql
 create table student(
-  id int primary key
+  id int primary key,
   name text
 )
 ```
@@ -115,8 +115,6 @@ user generated exploit string).
 
 ## Proposed solution
 
-Play around with a [REPL](https://output.jsbin.com/wiwovot/quiet) implementation.
-
 Allow prefixing backticks with `@`, for a template literal behaving almost the
 same as a regular single backticked template literal, with a few key
 differences:
@@ -129,8 +127,10 @@ differences:
 - The closing line's preceding literal newline char is ignored.
 - Lines which only contain whitespace are emptied.
 - The "common indentation" of all non-empty content lines (lines that are not the
-    opening or closing) are calculated.
+  opening or closing) are calculated.
 - That common indentation is removed from the start of every line.
+
+Play around with a [REPL](https://output.jsbin.com/wiwovot/quiet) implementation.
 
 The examples above would be solved like this:
 
@@ -151,7 +151,7 @@ This outputs the sensible:
 
 ```sql
 create table student(
-  id int primary key
+  id int primary key,
   name text
 )
 ```
@@ -162,7 +162,7 @@ template functions:
 ```javascript
 const query = sql@`
   select *
-  from studients
+  from students
   where name = ${name}
 `;
 ```
