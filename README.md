@@ -121,10 +121,10 @@ differences:
 
 - The opening line (everything immediately right of the opening `` ` ``) must
   contain only a literal newline char.
-- The opening line's literal newline is ignored.
+- The opening line's literal newline is removed.
 - The closing line (everything immediately to the left of the closing `` ` ``)
   may contain whitespace, but the whitespace is removed.
-- The closing line's preceding literal newline char is ignored.
+- The closing line's preceding literal newline char is removed.
 - Lines which only contain whitespace are emptied.
 - The "common indentation" of all non-empty content lines (lines that are not the
   opening or closing) are calculated.
