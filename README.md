@@ -31,8 +31,8 @@ This outputs (using `^` to mark the beginning of a line and `·` to mark a leadi
 ```sql
 ^
 ^······create table student(
-^······  id int primary key,
-^······  name text
+^········id int primary key,
+^········name text
 ^······)
 ^····
 ```
@@ -115,9 +115,9 @@ user generated exploit string).
 
 ## Proposed solution
 
-Allow prefixing backticks with `@`, for a template literal behaving almost the
-same as a regular single backticked template literal, with a few key
-differences:
+Implement a `String.dedent` tag template function, for a tagged template
+literal behaving almost the same as a regular single backticked template
+literal, with a few key differences:
 
 - The opening line (everything immediately right of the opening `` ` ``) must
   contain only a literal newline char.
@@ -137,7 +137,7 @@ The examples above would be solved like this:
 ```javascript
 class MyClass {
   print() {
-    console.log(@`
+    console.log(String.dedent`
       create table student(
         id int primary key,
         name text
@@ -156,14 +156,13 @@ create table student(
 )
 ```
 
-Expressions can be directly supported, as well as composition with tagged
-template functions:
+Expressions can be directly supported, as well as composition with
+another tagged template function:
 
 ```javascript
-const query = sql@`
-  select *
-  from students
-  where name = ${name}
+const message = 'Hello Python World';
+String.dedent(pythonInterpreter)`
+  print('${message}')
 `;
 ```
 
@@ -184,49 +183,7 @@ const query = sql@`
   The indentation of the closing marker dictates the amount of whitespace to
   strip from each line.
 
-## Syntax Alternatives Considered
-
-Some potential alternatives to the `@`-backtick-prefix syntax:
-
-- Triple-backticks syntax:
-  - Pros:
-    - Single-backticks within templates would not need to be escaped.
-  - Cons:
-    - Technically not backwards-compatible. Could break some
-      [real code in the wild](https://github.com/tc39/proposal-string-dedent/issues/8#issuecomment-678731612).
-- Using another character for dedentable templates, e.g. `"""` [#40](https://github.com/tc39/proposal-string-dedent/issues/40)
-  - Pros:
-    - Should be easy to select a character which would be a syntax error
-      currently, so the risk even of very contrived breaking changes could go to
-      near-zero.
-    - Could match existing languages with similar features, e.g. jsonnet.
-    - More intuitive difference from single-backticks.
-  - Cons:
-    - Less intuitive similarities to single-backticks, wouldn't be as obvious
-      that tagged template literals should work or expressions would work.
-- A built-in runtime method along the lines of the `dedent` library, e.g. `String.dedent`:
-  - Pros:
-    - Easier to implement.
-    - No new syntax.
-  - Cons:
-    - Non-zero runtime impact (though less than a JS library).
-    - Open question of whether [isTemplateObject](https://github.com/tc39/proposal-array-is-template-object)
-      would propagate to the output, and [whether this could introduce a
-      security vulnerability](https://github.com/mmkal/proposal-multi-backtick-templates/pull/5#discussion_r441894983).
-    - More verbose.
-    - Couldn't be adopted by ecmascript-compatible data formats like json5
-      and forks aiming at modern es features like
-      [json6](https://github.com/d3x0r/JSON6),
-      [jsox](https://github.com/d3x0r/JSOX),
-      [jsonext](https://github.com/jordanbtucker/jsonext) and
-      [ESON](https://github.com/mmkal/eson)
-
 ## Q&A
-
-### Is this compatible with the [decorators proposal](https://github.com/tc39/proposal-decorators)?
-
-Yes, since decorators require that `@` be the prefix for a valid identifier,
-meaning it cannot precede a backtick/template literal.
 
 ### Why not use a library?
 
@@ -237,8 +194,6 @@ To summarise the [problem](#problem) section above:
 - improved performance.
 - better discoverability - the feature can be documented publicly, and used in
   code samples which wouldn't otherwise rely on a package like dedent.
-- establish a standard that can be adopted by JSON-superset implementations like
-  [json5](https://npmjs.com/package/json5).
 - give code generators a way to output readable code with correct indentation
   properties (e.g. jest inline snapshots).
 - support "dedenting" tagged template literal functions with customized
