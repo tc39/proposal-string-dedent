@@ -142,9 +142,9 @@ markEffects: true
         1. Else,
           1. Let _s_ be *""*.
           1. Let _index_ be 0.
-          1. For each Record { [[String]], [[Newline]] } _line_ of _lines_, do
-            1. If _index_ is 0, let _c_ be 0; else let _c_ be _count_.
+          1. For each Record { [[String]], [[Newline]], [[LineEndsWithSubstitution]] } _line_ of _lines_, do
             1. NOTE: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.
+            1. If _index_ is 0, let _c_ be 0; else let _c_ be _count_.
             1. Let _strLen_ be the length of _line_.[[String]].
             1. Let _trimmed_ be the substring of _line_.[[String]] from _c_ to _strLen_.
             1. Set _s_ to the string-concatenation of _s_, _trimmed_, and _line_.[[Newline]].
@@ -159,7 +159,7 @@ markEffects: true
       SplitTemplateIntoBlockLines (
         _template_: an ECMAScript language value,
         _len_: a non-negative integer,
-      ): either a normal completion containing a List of Lists of Records with fields [[String]] (a String) and [[Newline]] (a String), or a throw completion
+      ): either a normal completion containing a List of Lists of Records with fields [[String]] (a String), [[Newline]] (a String), and [[LineEndsWithSubstitution]] (a Boolean), or a throw completion
     </h1>
     <dl class="header">
     </dl>
@@ -180,11 +180,12 @@ markEffects: true
             1. If _c_ is *"\n"* or _c_ is *"\r"* or _c_ is *"\u2028"* or _c_ is *"\u2029"*, then
               1. Let _substr_ be the substring of _str_ from _start_ to _i_.
               1. Let _newline_ be the substring of _str_ from _i_ to _i_ + _n_.
-              1. Append the Record { [[String]]: _substr_, [[Newline]]: _newline_ } to _lines_.
+              1. Append the Record { [[String]]: _substr_, [[Newline]]: _newline_, [[LineEndsWithSubstitution]]: *false* } to _lines_.
               1. Set _start_ to _i_ + _n_.
             1. Set _i_ to _i_ + _n_.
           1. Let _tail_ be the substring of _str_ from _start_ to _strLen_.
-          1. Append the Record { [[String]]: _tail_, [[Newline]]: *""* } to _lines_.
+          1. If _i_ + 1 &lt; _len_, let _lineEndsWithSubstitution_ be *true*; else let _lineEndsWithSubstitution_ be *false*.
+          1. Append the Record { [[String]]: _tail_, [[Newline]]: *""*, [[LineEndsWithSubstitution]]: _lineEndsWithSubstitution_ } to _lines_.
           1. Append _lines_ to _blocks_.
         1. Else,
           1. NOTE: After the template literal revision, cooked template strings arrays can contain *undefined* when an illegal escape sequence is found.
@@ -197,34 +198,30 @@ markEffects: true
   <emu-clause id="sec-empty-white-space-lines" type="abstract operation">
     <h1>
       EmptyWhiteSpaceLines (
-        _blocks_: a List of Lists of Records with fields [[String]] (a String), and [[Newline]] (a String),
+        _blocks_: a List of Lists of Records with fields [[String]] (a String), [[Newline]] (a String), and [[LineEndsWithSubstitution]] (a Boolean),
         _len_: a non-negative integer,
       )
     </h1>
     <dl class="header">
     </dl>
     <emu-alg>
-      1. Let _index_ be 0.
       1. For each element _lines_ of _blocks_, do
         1. Let _lineCount_ be the length of _lines_.
-        1. If _index_ + 1 is _len_, let _isLastBlock_ be *true*; else let _isLastBlock_ be *false*.
         1. NOTE: We start _i_ at 1 because because the first line of every block is either (a) the opening line which must be empty or (b) the continuation of a line directly after a template substitution. Neither can be the start of a content line.
         1. Let _i_ be 1.
         1. Repeat, while _i_ &lt; _lineCount_,
           1. Let _line_ be _lines_[_i_].
-          1. If _isLastBlock_ is *false* and _line_.[[Newline]] is *""*, let _lineEndsWithSubstitution_ be *true*; else let _lineEndsWithSubstitution_ be *false*.
-          1. If _lineEndsWithSubstitution_ is *false* and IsAllWhiteSpace(_line_.[[String]]) is *true*, then
-            1. Set _line_.[[String]] to *""*.
+          1. If _line_.[[LineEndsWithSubstitution]] is *false* and IsAllWhiteSpace(_line_.[[String]]) is *true*, then
             1. NOTE: Lines which contain only whitespace are emptied in the output. Their trailing newline is not removed, so the line is maintained.
+            1. Set _line_.[[String]] to *""*.
           1. Set _i_ to _i_ + 1.
-        1. Set _index_ to _index_ + 1.
     </emu-alg>
   </emu-clause>
 
   <emu-clause id="sec-remove-opening-and-closing-lines" type="abstract operation">
     <h1>
       RemoveOpeningAndClosingLines (
-        _blocks_: a List of Lists of Records with fields [[String]] (a String), and [[Newline]] (a String),
+        _blocks_: a List of Lists of Records with fields [[String]] (a String), [[Newline]] (a String), and [[LineEndsWithSubstitution]] (a Boolean),
         _len_: a non-negative integer,
       )
     </h1>
@@ -235,37 +232,38 @@ markEffects: true
       1. Let _firstBlock_ be _blocks_[0].
       1. If _firstBlock_ is not empty, then
         1. NOTE: _firstBlock_ may be empty if the cooked template strings array contains an illegal escape sequence.
-        1. Let _openingLine_ be _firstBlock_[0].
-        1. If _openingLine_.[[Newline]] is *""*, then
-          1. NOTE: The opening line is required to contain a trailing newline. If it does not, either the opening and closing line are the same line or the opening line contains a substitution.
+        1. Let _lineCount_ be the length of _firstBlock_.
+        1. If the _lineCount_ is 1, then
+          1. NOTE: The opening line is required to contain a trailing newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the opening line contains a substitution.
           1. Throw a *TypeError* exception.
+        1. Let _openingLine_ be _firstBlock_[0].
         1. If the length of _openingLine_.[[String]] is not 0, then
           1. NOTE: The opening line must not contain code units besides the trailing newline.
           1. Throw a *TypeError* exception.
-        1. Set _openingLine_.[[Newline]] to *""*.
         1. NOTE: Setting _openingLine_.[[Newline]] removes the opening line from the output.
+        1. Set _openingLine_.[[Newline]] to *""*.
       1. Let _lastBlock_ be _blocks_[_len_ - 1].
       1. If _lastBlock_ is not empty, then
         1. NOTE: _lastBlock_ may be empty if the cooked template strings array contains an illegal escape sequence.
         1. Let _lineCount_ be the length of _lastBlock_.
-        1. Let _closingLine_ be _lastBlock_[_lineCount_ - 1].
         1. If the _lineCount_ is 1, then
-          1. NOTE: The closing line is required to contain a preceding newline, and checking that there are at least 2 lines in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
+          1. NOTE: The closing line is required to be preceded by a newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
           1. Throw a *TypeError* exception.
+        1. Let _closingLine_ be _lastBlock_[_lineCount_ - 1].
         1. If IsAllWhiteSpace(_closingLine_.[[String]]) is *false*, then
           1. NOTE: The closing line may only contain whitespace.
           1. Throw a *TypeError* exception.
         1. Let _preceding_ be _lastBlock_[_lineCount_ - 2].
+        1. NOTE: Setting _closingLine_.[[String]] and _preceding_.[[Newline]] removes the closing line from the output.
         1. Set _closingLine_.[[String]] to *""*.
         1. Set _preceding_.[[Newline]] to *""*.
-        1. NOTE: Setting _closingLine_.[[String]] and _preceding_.[[Newline]] removes the closing line from the output.
     </emu-alg>
   </emu-clause>
 
   <emu-clause id="sec-determine-common-leading-indentation" type="abstract operation">
     <h1>
       DetermineCommonLeadingIndentation (
-        _blocks_: a List of Lists of Records with fields [[String]] (a String), and [[Newline]] (a String),
+        _blocks_: a List of Lists of Records with fields [[String]] (a String), [[Newline]] (a String), and [[LineEndsWithSubstitution]] (a Boolean),
         _len_: a non-negative integer,
       ): a String
     </h1>
@@ -273,24 +271,20 @@ markEffects: true
     </dl>
     <emu-alg>
       1. Let _common_ be ~empty~.
-      1. Let _index_ be 0.
       1. For each element _lines_ of _blocks_, do
-        1. If _index_ + 1 is _len_, let _isLastBlock_ be *true*; else let _isLastBlock_ be *false*.
         1. Let _lineCount_ be the length of _lines_.
         1. NOTE: We start _i_ at 1 because because the first line of every block is either (a) the opening line which must be empty or (b) the continuation of a line directly after a template substitution. Neither can be the start of a content line.
         1. Let _i_ be 1.
         1. Repeat, while _i_ &lt; _lineCount_,
           1. Let _line_ be _lines_[_i_].
-          1. If _isLastBlock_ is *false* and _line_.[[Newline]] is *""*, let _lineEndsWithSubstitution_ be *true*; else let _lineEndsWithSubstitution_ be *false*.
           1. NOTE: Lines which contain substitutions are considered when finding the common indentation. Lines which contain only whitespace have already been emptied.
-          1. If _lineEndsWithSubstitution_ is *true* or _line_.[[String]] is not empty, then
+          1. If _line_.[[LineEndsWithSubstitution]] is *true* or _line_.[[String]] is not empty, then
             1. Let _leading_ be LeadingWhiteSpaceSubstring(_line_.[[String]]).
             1. If _common_ is ~empty~, then
               1. Set _common_ to _leading_.
             1. Else,
               1. Set _common_ to LongestLeadingMatchingSubstring(_common_, _leading_).
           1. Set _i_ to _i_ + 1.
-        1. Set _index_ to _index_ + 1.
       1. If _common_ is ~empty~, then
         1. NOTE: _common_ can be ~empty~ if the cooked template contains only *undefined* values.
         1. Return *""*.
