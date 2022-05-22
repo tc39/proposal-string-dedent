@@ -48,7 +48,7 @@ location: https://tc39.es/proposal-string-dedent/
       1. Throw a *TypeError* exception.
     </emu-alg>
     <emu-note>
-      <p>The `dedent` function is intended for use as a tag function of a Tagged Template (<a href="https://tc39.es/ecma262/multipage/ecmascript-language-expressions.html#sec-tagged-templates">#sec-tagged-templates</a>). When called as such, the first argument will be a well formed template object and the rest parameter will contain the substitution values.</p>
+      <p>The `dedent` function is intended for use as a tag function of a Tagged Template (<emu-xref href="#sec-tagged-templates"></emu-xref>). When called as such, the first argument will be a well formed template object and the rest parameter will contain the substitution values.</p>
     </emu-note>
   </emu-note>
 
@@ -313,7 +313,7 @@ location: https://tc39.es/proposal-string-dedent/
           1. Return the substring of _str_ from 0 to _i_.
       1. Return _str_.
     </emu-alg>
-    <p>The definition of white space is |WhiteSpace|. When determining whether a Unicode code point is in Unicode general category &ldquo;Space_Separator&rdquo; (&ldquo;Zs&rdquo;), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <a href="https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-ecmascript-language-types-string-type">#sec-ecmascript-language-types-string-type</a>.</p>
+    <p>The definition of white space is |WhiteSpace|. When determining whether a Unicode code point is in Unicode general category &ldquo;Space_Separator&rdquo; (&ldquo;Zs&rdquo;), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <emu-xref href="#sec-ecmascript-language-types-string-type"></emu-xref>.</p>
   </emu-clause>
 
   <emu-clause id="sec-is-all-white-space" type="abstract operation">
