@@ -4,7 +4,7 @@
   "description": "TC39 proposal to remove leading whitespace from multiline strings.",
   "scripts": {
     "build": "npm run build-loose -- --strict",
-    "build-loose": "ecmarkup --verbose spec.emu index.html",
+    "build-loose": "ecmarkup --load-biblio @tc39/ecma262-biblio --verbose spec.emu index.html",
     "start": "npm run build-loose -- --watch"
   },
   "homepage": "https://github.com/mmkal/proposal-multi-backtick-templates#readme",
@@ -14,6 +14,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@tc39/ecma262-biblio": "2.0.2321",
     "ecmarkup": "12.1.0"
   }
 }
