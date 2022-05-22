@@ -3,8 +3,9 @@
   "name": "proposal-string-dedent",
   "description": "TC39 proposal to remove leading whitespace from multiline strings.",
   "scripts": {
-    "build": "ecmarkup --verbose spec.emu index.html",
-    "start": "npm run build -- --watch"
+    "build": "npm run build-loose -- --strict",
+    "build-loose": "ecmarkup --verbose spec.emu index.html",
+    "start": "npm run build-loose -- --watch"
   },
   "homepage": "https://github.com/mmkal/proposal-multi-backtick-templates#readme",
   "repository": {
