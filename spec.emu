@@ -170,13 +170,13 @@ location: https://tc39.es/proposal-string-dedent/
           1. Let _lines_ be a new empty List.
           1. Let _strLen_ be the length of _str_.
           1. Let _start_ be 0.
-          1. Let _i_ be 0.
-          1. For each code unit _C_ that is an element of _str_, do
+          1. For each integer _i_ starting with 0 such that _i_ &le; _strLen_, in ascending order, do
+            1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
             1. Let _n_ be 1.
-            1. If _C_ is *"\r"*, then
-              1. If _i_ + 1 &lt; _strLen_ and ! Get(_str_, ! ToString(𝔽(_i_ + 1)) is *"\n"*, then
-                1. Set _n_ to 2.
-            1. If _C_ is *"\n"* or _C_ is *"\r"* or _C_ is *"\u2028"* or _C_ is *"\u2029"*, then
+            1. If _c_ is *"\r"*, then
+              1. Let _next_ be the substring of _str_ from _i_ + 1 to _i_ + 2.
+              1. If _next_ is *"\n"*, set _n_ to 2.
+            1. If _c_ is *"\n"* or _c_ is *"\r"* or _c_ is *"\u2028"* or _c_ is *"\u2029"*, then
               1. Let _substr_ be the substring of _str_ from _start_ to _i_.
               1. Let _newline_ be the substring of _str_ from _i_ to _i_ + _n_.
               1. Append the Record { [[String]]: _substr_, [[Newline]]: _newline_ } to _lines_.
@@ -306,8 +306,12 @@ location: https://tc39.es/proposal-string-dedent/
     <dl class="header">
     </dl>
     <emu-alg>
-      1. Let _l_ be the String value that is a copy of _str_ with only leading white space.
-      1. Return _l_.
+      1. Let _len_ be the length of _str_.
+      1. For each integer _i_ starting with 0 such that _i_ &le; _len_, in ascending order, do
+        1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
+        1. If _c_ is not white space, then
+          1. Return the substring of _str_ from 0 to _i_.
+      1. Return _str_.
     </emu-alg>
     <p>The definition of white space is |WhiteSpace|. When determining whether a Unicode code point is in Unicode general category &ldquo;Space_Separator&rdquo; (&ldquo;Zs&rdquo;), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <a href="https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-ecmascript-language-types-string-type">#sec-ecmascript-language-types-string-type</a>.</p>
   </emu-clause>
@@ -321,10 +325,8 @@ location: https://tc39.es/proposal-string-dedent/
     <dl class="header">
     </dl>
     <emu-alg>
-      1. Let _len_ be the length of _str_.
-      1. Let _leading_ be LeadingWhiteSpaceSubstring(_str_).
-      1. Let _leadingLen_ be the length of _leading_.
-      1. If _len_ is _leadingLen_, return *true*.
+      1. Let _trimmed_ be TrimString(_str_, ~start~).
+      1. If _trimmed_ is *""*, return *true*.
       1. Return *false*.
     </emu-alg>
   </emu-clause>
