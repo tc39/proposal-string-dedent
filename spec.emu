@@ -208,7 +208,7 @@ markEffects: true
       1. For each element _lines_ of _blocks_, do
         1. Let _lineCount_ be the length of _lines_.
         1. If _index_ + 1 is _len_, let _isLastBlock_ be *true*; else let _isLastBlock_ be *false*.
-        1. Note: We start at _i_ 1 because because the first line of every block is either (a) the opening line which must be empty or (b) the continuation of a line directly after a template substitution. Neither can be the start of a content line.
+        1. Note: We start _i_ at 1 because because the first line of every block is either (a) the opening line which must be empty or (b) the continuation of a line directly after a template substitution. Neither can be the start of a content line.
         1. Let _i_ be 1.
         1. Repeat, while _i_ &lt; _lineCount_,
           1. Let _line_ be _lines_[_i_].
@@ -277,7 +277,7 @@ markEffects: true
       1. For each element _lines_ of _blocks_, do
         1. If _index_ + 1 is _len_, let _isLastBlock_ be *true*; else let _isLastBlock_ be *false*.
         1. Let _lineCount_ be the length of _lines_.
-        1. Note: We start at _i_ 1 because because the first line of every block is either (a) the opening line which must be empty or (b) the continuation of a line directly after a template substitution. Neither can be the start of a content line.
+        1. Note: We start _i_ at 1 because because the first line of every block is either (a) the opening line which must be empty or (b) the continuation of a line directly after a template substitution. Neither can be the start of a content line.
         1. Let _i_ be 1.
         1. Repeat, while _i_ &lt; _lineCount_,
           1. Let _line_ be _lines_[_i_].
