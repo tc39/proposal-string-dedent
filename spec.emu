@@ -140,16 +140,18 @@ markEffects: true
         1. If _lines_ is empty, then
           1. Append *undefined* to _dedented_.
         1. Else,
-          1. Let _s_ be *""*.
+          1. Let _stringElements_ be a new empty List.
           1. Let _index_ be 0.
           1. For each Record { [[String]], [[Newline]], [[LineEndsWithSubstitution]] } _line_ of _lines_, do
             1. NOTE: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.
             1. If _index_ is 0, let _c_ be 0; else let _c_ be _count_.
             1. Let _strLen_ be the length of _line_.[[String]].
             1. Let _trimmed_ be the substring of _line_.[[String]] from _c_ to _strLen_.
-            1. Set _s_ to the string-concatenation of _s_, _trimmed_, and _line_.[[Newline]].
+            1. Append _trimmed_ to _stringElements_.
+            1. Append _line_.[[Newline]] to _stringElements_.
             1. Set _index_ to _index_ + 1.
-          1. Append _s_ to _dedented_.
+          1. Let _str_ be the String value whose code units are the elements in the List _stringElements_.
+          1. Append _str_ to _dedented_.
       1. Return _dedented_.
     </emu-alg>
   </emu-clause>
