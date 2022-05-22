@@ -34,7 +34,7 @@ location: https://tc39.es/proposal-string-dedent/
       <p>When removing the common leading indentation, lines which contain only whitespace will have all whitespace removed.</p>
     </emu-note>
     <emu-alg>
-      1. If Type(_templateOrFn_) is Object and IsCallable(_templateOrFn_) is *true*, then
+      1. If IsCallable(_templateOrFn_) is *true*, then
         1. Let _tag_ be _templateOrFn_.
         1. Let _closure_ be a new Abstract Closure with parameters (_template_, ..._substitutions_) that captures _tag_ and performs the following steps when called:
           1. Let _R_ be the *this* value.
