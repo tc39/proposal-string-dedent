@@ -171,7 +171,7 @@ markEffects: true
           1. Let _lines_ be a new empty List.
           1. Let _strLen_ be the length of _str_.
           1. Let _start_ be 0.
-          1. For each integer _i_ starting with 0 such that _i_ &le; _strLen_, in ascending order, do
+          1. For each integer _i_ starting with 0 such that _i_ &lt; _strLen_, in ascending order, do
             1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
             1. Let _n_ be 1.
             1. If _c_ is *"\r"*, then
@@ -308,7 +308,7 @@ markEffects: true
     </dl>
     <emu-alg>
       1. Let _len_ be the length of _str_.
-      1. For each integer _i_ starting with 0 such that _i_ &le; _len_, in ascending order, do
+      1. For each integer _i_ starting with 0 such that _i_ &lt; _len_, in ascending order, do
         1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
         1. If _c_ is not white space, then
           1. Return the substring of _str_ from 0 to _i_.
@@ -344,8 +344,8 @@ markEffects: true
     <emu-alg>
       1. Let _aLen_ be the length of _a_.
       1. Let _bLen_ be the length of _b_.
-      1. If _aLen_ is less than _bLen_, let _len_ be _aLen_; else let _len_ be _bLen_.
-      1. For each integer _i_ starting with 0 such that _i_ &le; _len_, in ascending order, do
+      1. If _aLen_ &lt; _bLen_, let _len_ be _aLen_; else let _len_ be _bLen_.
+      1. For each integer _i_ starting with 0 such that _i_ &lt; _len_, in ascending order, do
         1. Let _aChar_ be the substring of _a_ from _i_ to _i_ + 1.
         1. Let _bChar_ be the substring of _b_ from _i_ to _i_ + 1.
         1. If _aChar_ is not _bChar_, then
