@@ -1,10 +1,92 @@
 <!doctype html>
 <head><meta charset="utf-8">
-<link rel="stylesheet" href="./spec.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.1/styles/base16/solarized-light.min.css"><link rel="stylesheet" href="./spec.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
 <script src="./spec.js"></script>
-<title>Proposal Title Goes Here</title><script type="application/json" id="menu-search-biblio">[{"type":"clause","id":"sec-demo-clause","aoid":null,"title":"This is an emu-clause","titleHTML":"This is an emu-clause","number":"1","namespace":"<no location>","location":"","referencingIds":[],"key":"This is an emu-clause"},{"type":"clause","id":"sec-copyright-and-software-license","aoid":null,"title":"Copyright & Software License","titleHTML":"Copyright &amp; Software License","number":"A","namespace":"<no location>","location":"","referencingIds":[],"key":"Copyright & Software License"}]</script><script>"use strict";
+<title>String Dedent</title><script>'use strict';
+let sdoBox = {
+  init() {
+    this.$alternativeId = null;
+    this.$outer = document.createElement('div');
+    this.$outer.classList.add('toolbox-container');
+    this.$container = document.createElement('div');
+    this.$container.classList.add('toolbox');
+    this.$displayLink = document.createElement('a');
+    this.$displayLink.setAttribute('href', '#');
+    this.$displayLink.textContent = 'Syntax-Directed Operations';
+    this.$displayLink.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      referencePane.showSDOs(sdoMap[this.$alternativeId] || {}, this.$alternativeId);
+    });
+    this.$container.appendChild(this.$displayLink);
+    this.$outer.appendChild(this.$container);
+    document.body.appendChild(this.$outer);
+  },
 
+  activate(el) {
+    clearTimeout(this.deactiveTimeout);
+    Toolbox.deactivate();
+    this.$alternativeId = el.id;
+    let numSdos = Object.keys(sdoMap[this.$alternativeId] || {}).length;
+    this.$displayLink.textContent = 'Syntax-Directed Operations (' + numSdos + ')';
+    this.$outer.classList.add('active');
+    let top = el.offsetTop - this.$outer.offsetHeight;
+    let left = el.offsetLeft + 50 - 10; // 50px = padding-left(=75px) + text-indent(=-25px)
+    this.$outer.setAttribute('style', 'left: ' + left + 'px; top: ' + top + 'px');
+    if (top < document.body.scrollTop) {
+      this.$container.scrollIntoView();
+    }
+  },
+
+  deactivate() {
+    clearTimeout(this.deactiveTimeout);
+    this.$outer.classList.remove('active');
+  },
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof sdoMap == 'undefined') {
+    console.error('could not find sdo map');
+    return;
+  }
+  sdoBox.init();
+
+  let insideTooltip = false;
+  sdoBox.$outer.addEventListener('pointerenter', () => {
+    insideTooltip = true;
+  });
+  sdoBox.$outer.addEventListener('pointerleave', () => {
+    insideTooltip = false;
+    sdoBox.deactivate();
+  });
+
+  sdoBox.deactiveTimeout = null;
+  [].forEach.call(document.querySelectorAll('emu-grammar[type=definition] emu-rhs'), node => {
+    node.addEventListener('pointerenter', function () {
+      sdoBox.activate(this);
+    });
+
+    node.addEventListener('pointerleave', () => {
+      sdoBox.deactiveTimeout = setTimeout(() => {
+        if (!insideTooltip) {
+          sdoBox.deactivate();
+        }
+      }, 500);
+    });
+  });
+
+  document.addEventListener(
+    'keydown',
+    debounce(e => {
+      if (e.code === 'Escape') {
+        sdoBox.deactivate();
+      }
+    })
+  );
+});
+
+'use strict';
 function Search(menu) {
   this.menu = menu;
   this.$search = document.getElementById('menu-search');
@@ -15,8 +97,14 @@ function Search(menu) {
 
   document.addEventListener('keydown', this.documentKeydown.bind(this));
 
-  this.$searchBox.addEventListener('keydown', debounce(this.searchBoxKeydown.bind(this), { stopPropagation: true }));
-  this.$searchBox.addEventListener('keyup', debounce(this.searchBoxKeyup.bind(this), { stopPropagation: true }));
+  this.$searchBox.addEventListener(
+    'keydown',
+    debounce(this.searchBoxKeydown.bind(this), { stopPropagation: true })
+  );
+  this.$searchBox.addEventListener(
+    'keyup',
+    debounce(this.searchBoxKeyup.bind(this), { stopPropagation: true })
+  );
 
   // Perform an initial search if the box is not empty.
   if (this.$searchBox.value) {
@@ -25,26 +113,34 @@ function Search(menu) {
 }
 
 Search.prototype.loadBiblio = function () {
-  var $biblio = document.getElementById('menu-search-biblio');
-  if (!$biblio) {
-    this.biblio = [];
+  if (typeof biblio === 'undefined') {
+    console.error('could not find biblio');
+    this.biblio = { refToClause: {}, entries: [] };
   } else {
-    this.biblio = JSON.parse($biblio.textContent);
-    this.biblio.clauses = this.biblio.filter(function (e) { return e.type === 'clause' });
-    this.biblio.byId = this.biblio.reduce(function (map, entry) {
+    this.biblio = biblio;
+    this.biblio.clauses = this.biblio.entries.filter(e => e.type === 'clause');
+    this.biblio.byId = this.biblio.entries.reduce((map, entry) => {
       map[entry.id] = entry;
       return map;
     }, {});
+    let refParentClause = Object.create(null);
+    this.biblio.refParentClause = refParentClause;
+    let refsByClause = this.biblio.refsByClause;
+    Object.keys(refsByClause).forEach(clause => {
+      refsByClause[clause].forEach(ref => {
+        refParentClause[ref] = clause;
+      });
+    });
   }
-}
+};
 
 Search.prototype.documentKeydown = function (e) {
-  if (e.keyCode === 191) {
+  if (e.key === '/') {
     e.preventDefault();
     e.stopPropagation();
     this.triggerSearch();
   }
-}
+};
 
 Search.prototype.searchBoxKeydown = function (e) {
   e.stopPropagation();
@@ -55,7 +151,7 @@ Search.prototype.searchBoxKeydown = function (e) {
     e.preventDefault();
     this.selectResult();
   }
-}
+};
 
 Search.prototype.searchBoxKeyup = function (e) {
   if (e.keyCode === 13 || e.keyCode === 9) {
@@ -63,10 +159,9 @@ Search.prototype.searchBoxKeyup = function (e) {
   }
 
   this.search(e.target.value);
-}
+};
 
-
-Search.prototype.triggerSearch = function (e) {
+Search.prototype.triggerSearch = function () {
   if (this.menu.isVisible()) {
     this._closeAfterSearch = false;
   } else {
@@ -76,14 +171,14 @@ Search.prototype.triggerSearch = function (e) {
 
   this.$searchBox.focus();
   this.$searchBox.select();
-}
+};
 // bit 12 - Set if the result starts with searchString
 // bits 8-11: 8 - number of chunks multiplied by 2 if cases match, otherwise 1.
 // bits 1-7: 127 - length of the entry
 // General scheme: prefer case sensitive matches with fewer chunks, and otherwise
 // prefer shorter matches.
-function relevance(result, searchString) {
-  var relevance = 0;
+function relevance(result) {
+  let relevance = 0;
 
   relevance = Math.max(0, 8 - result.match.chunks) << 7;
 
@@ -92,10 +187,10 @@ function relevance(result, searchString) {
   }
 
   if (result.match.prefix) {
-    relevance += 2048
+    relevance += 2048;
   }
 
-  relevance += Math.max(0, 255 - result.entry.key.length);
+  relevance += Math.max(0, 255 - result.key.length);
 
   return relevance;
 }
@@ -114,36 +209,34 @@ Search.prototype.search = function (searchString) {
     return;
   }
 
-  var results;
+  let results;
 
-  if (/^[\d\.]*$/.test(searchString)) {
-    results = this.biblio.clauses.filter(function (clause) {
-      return clause.number.substring(0, searchString.length) === searchString;
-    }).map(function (clause) {
-      return { entry: clause };
-    });
+  if (/^[\d.]*$/.test(searchString)) {
+    results = this.biblio.clauses
+      .filter(clause => clause.number.substring(0, searchString.length) === searchString)
+      .map(clause => ({ key: getKey(clause), entry: clause }));
   } else {
     results = [];
 
-    for (var i = 0; i < this.biblio.length; i++) {
-      var entry = this.biblio[i];
-      if (!entry.key) {
+    for (let i = 0; i < this.biblio.entries.length; i++) {
+      let entry = this.biblio.entries[i];
+      let key = getKey(entry);
+      if (!key) {
         // biblio entries without a key aren't searchable
         continue;
       }
 
-      var match = fuzzysearch(searchString, entry.key);
+      let match = fuzzysearch(searchString, key);
       if (match) {
-        results.push({ entry: entry, match: match });
+        results.push({ key, entry, match });
       }
     }
 
-    results.forEach(function (result) {
+    results.forEach(result => {
       result.relevance = relevance(result, searchString);
     });
 
-    results = results.sort(function (a, b) { return b.relevance - a.relevance });
-
+    results = results.sort((a, b) => b.relevance - a.relevance);
   }
 
   if (results.length > 50) {
@@ -151,17 +244,17 @@ Search.prototype.search = function (searchString) {
   }
 
   this.displayResults(results);
-}
+};
 Search.prototype.hideSearch = function () {
   this.$search.classList.remove('active');
-}
+};
 
 Search.prototype.showSearch = function () {
   this.$search.classList.add('active');
-}
+};
 
 Search.prototype.selectResult = function () {
-  var $first = this.$searchResults.querySelector('li:first-child a');
+  let $first = this.$searchResults.querySelector('li:first-child a');
 
   if ($first) {
     document.location = $first.getAttribute('href');
@@ -175,53 +268,79 @@ Search.prototype.selectResult = function () {
   if (this._closeAfterSearch) {
     this.menu.hide();
   }
-}
+};
 
 Search.prototype.displayResults = function (results) {
   if (results.length > 0) {
     this.$searchResults.classList.remove('no-results');
 
-    var html = '<ul>';
+    let html = '<ul>';
 
-    results.forEach(function (result) {
-      var entry = result.entry;
-      var id = entry.id;
-      var cssClass = '';
-      var text = '';
+    results.forEach(result => {
+      let key = result.key;
+      let entry = result.entry;
+      let id = entry.id;
+      let cssClass = '';
+      let text = '';
 
       if (entry.type === 'clause') {
-        var number = entry.number ? entry.number + ' ' : '';
-        text = number + entry.key;
+        let number = entry.number ? entry.number + ' ' : '';
+        text = number + key;
         cssClass = 'clause';
         id = entry.id;
       } else if (entry.type === 'production') {
-        text = entry.key;
+        text = key;
         cssClass = 'prod';
         id = entry.id;
       } else if (entry.type === 'op') {
-        text = entry.key;
+        text = key;
         cssClass = 'op';
         id = entry.id || entry.refId;
       } else if (entry.type === 'term') {
-        text = entry.key;
+        text = key;
         cssClass = 'term';
         id = entry.id || entry.refId;
       }
 
       if (text) {
-        html += '<li class=menu-search-result-' + cssClass + '><a href="#' + id + '">' + text + '</a></li>';
+        // prettier-ignore
+        html += `<li class=menu-search-result-${cssClass}><a href="${makeLinkToId(id)}">${text}</a></li>`;
       }
     });
 
-    html += '</ul>'
+    html += '</ul>';
 
     this.$searchResults.innerHTML = html;
   } else {
     this.$searchResults.innerHTML = '';
     this.$searchResults.classList.add('no-results');
   }
-}
+};
 
+function getKey(item) {
+  if (item.key) {
+    return item.key;
+  }
+  switch (item.type) {
+    case 'clause':
+      return item.title || item.titleHTML;
+    case 'production':
+      return item.name;
+    case 'op':
+      return item.aoid;
+    case 'term':
+      return item.term;
+    case 'table':
+    case 'figure':
+    case 'example':
+    case 'note':
+      return item.caption;
+    case 'step':
+      return item.id;
+    default:
+      throw new Error("Can't get key for " + item.type);
+  }
+}
 
 function Menu() {
   this.$toggle = document.getElementById('menu-toggle');
@@ -233,7 +352,7 @@ function Menu() {
   this.$specContainer = document.getElementById('spec-container');
   this.search = new Search(this);
 
-  this._pinnedIds = {}; 
+  this._pinnedIds = {};
   this.loadPinEntries();
 
   // toggle menu
@@ -243,23 +362,23 @@ function Menu() {
   document.addEventListener('keydown', this.documentKeydown.bind(this));
 
   // toc expansion
-  var tocItems = this.$menu.querySelectorAll('#menu-toc li');
-  for (var i = 0; i < tocItems.length; i++) {
-    var $item = tocItems[i];
-    $item.addEventListener('click', function($item, event) {
+  let tocItems = this.$menu.querySelectorAll('#menu-toc li');
+  for (let i = 0; i < tocItems.length; i++) {
+    let $item = tocItems[i];
+    $item.addEventListener('click', event => {
       $item.classList.toggle('active');
       event.stopPropagation();
-    }.bind(null, $item));
+    });
   }
 
   // close toc on toc item selection
-  var tocLinks = this.$menu.querySelectorAll('#menu-toc li > a');
-  for (var i = 0; i < tocLinks.length; i++) {
-    var $link = tocLinks[i];
-    $link.addEventListener('click', function(event) {
+  let tocLinks = this.$menu.querySelectorAll('#menu-toc li > a');
+  for (let i = 0; i < tocLinks.length; i++) {
+    let $link = tocLinks[i];
+    $link.addEventListener('click', event => {
       this.toggle();
       event.stopPropagation();
-    }.bind(this));
+    });
   }
 
   // update active clause on scroll
@@ -267,14 +386,13 @@ function Menu() {
   this.updateActiveClause();
 
   // prevent menu scrolling from scrolling the body
-  this.$toc.addEventListener('wheel', function (e) {
-    var target = e.currentTarget;
-    var offTop = e.deltaY < 0 && target.scrollTop === 0;
+  this.$toc.addEventListener('wheel', e => {
+    let target = e.currentTarget;
+    let offTop = e.deltaY < 0 && target.scrollTop === 0;
     if (offTop) {
       e.preventDefault();
     }
-    var offBottom = e.deltaY > 0
-                    && target.offsetHeight + target.scrollTop >= target.scrollHeight;
+    let offBottom = e.deltaY > 0 && target.offsetHeight + target.scrollTop >= target.scrollHeight;
 
     if (offBottom) {
       e.preventDefault();
@@ -289,62 +407,66 @@ Menu.prototype.documentKeydown = function (e) {
   } else if (e.keyCode > 48 && e.keyCode < 58) {
     this.selectPin(e.keyCode - 49);
   }
-}
+};
 
 Menu.prototype.updateActiveClause = function () {
-  this.setActiveClause(findActiveClause(this.$specContainer))
-}
+  this.setActiveClause(findActiveClause(this.$specContainer));
+};
 
 Menu.prototype.setActiveClause = function (clause) {
   this.$activeClause = clause;
   this.revealInToc(this.$activeClause);
-}
+};
 
 Menu.prototype.revealInToc = function (path) {
-  var current = this.$toc.querySelectorAll('li.revealed');
-  for (var i = 0; i < current.length; i++) {
+  let current = this.$toc.querySelectorAll('li.revealed');
+  for (let i = 0; i < current.length; i++) {
     current[i].classList.remove('revealed');
     current[i].classList.remove('revealed-leaf');
   }
 
-  var current = this.$toc;
-  var index = 0;
-  while (index < path.length) {
-    var children = current.children;
-    for (var i = 0; i < children.length; i++) {
-      if ('#' + path[index].id === children[i].children[1].getAttribute('href') ) {
+  current = this.$toc;
+  let index = 0;
+  outer: while (index < path.length) {
+    let children = current.children;
+    for (let i = 0; i < children.length; i++) {
+      if ('#' + path[index].id === children[i].children[1].hash) {
         children[i].classList.add('revealed');
         if (index === path.length - 1) {
           children[i].classList.add('revealed-leaf');
-          var rect = children[i].getBoundingClientRect();
+          let rect = children[i].getBoundingClientRect();
           // this.$toc.getBoundingClientRect().top;
-          var tocRect = this.$toc.getBoundingClientRect();
+          let tocRect = this.$toc.getBoundingClientRect();
           if (rect.top + 10 > tocRect.bottom) {
-            this.$toc.scrollTop = this.$toc.scrollTop + (rect.top - tocRect.bottom) + (rect.bottom - rect.top);
+            this.$toc.scrollTop =
+              this.$toc.scrollTop + (rect.top - tocRect.bottom) + (rect.bottom - rect.top);
           } else if (rect.top < tocRect.top) {
             this.$toc.scrollTop = this.$toc.scrollTop - (tocRect.top - rect.top);
           }
         }
         current = children[i].querySelector('ol');
         index++;
-        break;
+        continue outer;
       }
     }
-
+    console.log('could not find location in table of contents', path);
+    break;
   }
-}
+};
 
 function findActiveClause(root, path) {
-  var clauses = new ClauseWalker(root);
-  var $clause;
-  var path = path || [];
+  let clauses = getChildClauses(root);
+  path = path || [];
 
-  while ($clause = clauses.nextNode()) {
-    var rect = $clause.getBoundingClientRect();
-    var $header = $clause.querySelector("h1");
-    var marginTop = parseInt(getComputedStyle($header)["margin-top"]);
+  for (let $clause of clauses) {
+    let rect = $clause.getBoundingClientRect();
+    let $header = $clause.querySelector('h1');
+    let marginTop = Math.max(
+      parseInt(getComputedStyle($clause)['margin-top']),
+      parseInt(getComputedStyle($header)['margin-top'])
+    );
 
-    if ((rect.top - marginTop) <= 0 && rect.bottom > 0) {
+    if (rect.top - marginTop <= 1 && rect.bottom > 0) {
       return findActiveClause($clause, path.concat($clause)) || path;
     }
   }
@@ -352,57 +474,49 @@ function findActiveClause(root, path) {
   return path;
 }
 
-function ClauseWalker(root) {
-  var previous;
-  var treeWalker = document.createTreeWalker(
-    root,
-    NodeFilter.SHOW_ELEMENT,
-    {
-      acceptNode: function (node) {
-        if (previous === node.parentNode) {
-          return NodeFilter.FILTER_REJECT;
-        } else {
-          previous = node;
-        }
-        if (node.nodeName === 'EMU-CLAUSE' || node.nodeName === 'EMU-INTRO' || node.nodeName === 'EMU-ANNEX') {
-          return NodeFilter.FILTER_ACCEPT;
-        } else {
-          return NodeFilter.FILTER_SKIP;
-        }
-      }
-    },
-    false
-    );
+function* getChildClauses(root) {
+  for (let el of root.children) {
+    switch (el.nodeName) {
+      // descend into <emu-import>
+      case 'EMU-IMPORT':
+        yield* getChildClauses(el);
+        break;
 
-  return treeWalker;
+      // accept <emu-clause>, <emu-intro>, and <emu-annex>
+      case 'EMU-CLAUSE':
+      case 'EMU-INTRO':
+      case 'EMU-ANNEX':
+        yield el;
+    }
+  }
 }
 
 Menu.prototype.toggle = function () {
   this.$menu.classList.toggle('active');
-}
+};
 
 Menu.prototype.show = function () {
   this.$menu.classList.add('active');
-}
+};
 
 Menu.prototype.hide = function () {
   this.$menu.classList.remove('active');
-}
+};
 
-Menu.prototype.isVisible = function() {
+Menu.prototype.isVisible = function () {
   return this.$menu.classList.contains('active');
-}
+};
 
 Menu.prototype.showPins = function () {
   this.$pins.classList.add('active');
-}
+};
 
 Menu.prototype.hidePins = function () {
   this.$pins.classList.remove('active');
-}
+};
 
 Menu.prototype.addPinEntry = function (id) {
-  var entry = this.search.biblio.byId[id];
+  let entry = this.search.biblio.byId[id];
   if (!entry) {
     // id was deleted after pin (or something) so remove it
     delete this._pinnedIds[id];
@@ -411,15 +525,16 @@ Menu.prototype.addPinEntry = function (id) {
   }
 
   if (entry.type === 'clause') {
-    var prefix;
+    let prefix;
     if (entry.number) {
       prefix = entry.number + ' ';
     } else {
       prefix = '';
     }
-    this.$pinList.innerHTML += '<li><a href="#' + entry.id + '">' + prefix + entry.titleHTML + '</a></li>';
+    // prettier-ignore
+    this.$pinList.innerHTML += `<li><a href="${makeLinkToId(entry.id)}">${prefix}${entry.titleHTML}</a></li>`;
   } else {
-    this.$pinList.innerHTML += '<li><a href="#' + entry.id + '">' + entry.key + '</a></li>';
+    this.$pinList.innerHTML += `<li><a href="${makeLinkToId(entry.id)}">${getKey(entry)}</a></li>`;
   }
 
   if (Object.keys(this._pinnedIds).length === 0) {
@@ -427,10 +542,10 @@ Menu.prototype.addPinEntry = function (id) {
   }
   this._pinnedIds[id] = true;
   this.persistPinEntries();
-}
+};
 
 Menu.prototype.removePinEntry = function (id) {
-  var item = this.$pinList.querySelector('a[href="#' + id + '"]').parentNode;
+  let item = this.$pinList.querySelector(`a[href="${makeLinkToId(id)}"]`).parentNode;
   this.$pinList.removeChild(item);
   delete this._pinnedIds[id];
   if (Object.keys(this._pinnedIds).length === 0) {
@@ -438,7 +553,7 @@ Menu.prototype.removePinEntry = function (id) {
   }
 
   this.persistPinEntries();
-}
+};
 
 Menu.prototype.persistPinEntries = function () {
   try {
@@ -448,7 +563,7 @@ Menu.prototype.persistPinEntries = function () {
   }
 
   localStorage.pinEntries = JSON.stringify(Object.keys(this._pinnedIds));
-}
+};
 
 Menu.prototype.loadPinEntries = function () {
   try {
@@ -457,13 +572,13 @@ Menu.prototype.loadPinEntries = function () {
     return;
   }
 
-  var pinsString = window.localStorage.pinEntries;
+  let pinsString = window.localStorage.pinEntries;
   if (!pinsString) return;
-  var pins = JSON.parse(pinsString);
-  for(var i = 0; i < pins.length; i++) {
+  let pins = JSON.parse(pinsString);
+  for (let i = 0; i < pins.length; i++) {
     this.addPinEntry(pins[i]);
   }
-}
+};
 
 Menu.prototype.togglePinEntry = function (id) {
   if (!id) {
@@ -475,62 +590,49 @@ Menu.prototype.togglePinEntry = function (id) {
   } else {
     this.addPinEntry(id);
   }
-}
+};
 
 Menu.prototype.selectPin = function (num) {
   document.location = this.$pinList.children[num].children[0].href;
-}
+};
 
-var menu;
-function init() {
-  menu = new Menu();
-  var $container = document.getElementById('spec-container');
-  $container.addEventListener('mouseover', debounce(function (e) {
-    Toolbox.activateIfMouseOver(e);
-  }));
-  document.addEventListener('keydown', debounce(function (e) {
-    if (e.code === "Escape" && Toolbox.active) {
-      Toolbox.deactivate();
-    }
-  }));
-}
+let menu;
 
 document.addEventListener('DOMContentLoaded', init);
 
 function debounce(fn, opts) {
   opts = opts || {};
-  var timeout;
-  return function(e) {
+  let timeout;
+  return function (e) {
     if (opts.stopPropagation) {
       e.stopPropagation();
     }
-    var args = arguments;
+    let args = arguments;
     if (timeout) {
       clearTimeout(timeout);
     }
-    timeout = setTimeout(function() {
+    timeout = setTimeout(() => {
       timeout = null;
       fn.apply(this, args);
-    }.bind(this), 150);
-  }
+    }, 150);
+  };
 }
 
-var CLAUSE_NODES = ['EMU-CLAUSE', 'EMU-INTRO', 'EMU-ANNEX'];
-function findLocalReferences ($elem) {
-  var name = $elem.innerHTML;
-  var references = [];
-
-  var parentClause = $elem.parentNode;
+let CLAUSE_NODES = ['EMU-CLAUSE', 'EMU-INTRO', 'EMU-ANNEX'];
+function findContainer($elem) {
+  let parentClause = $elem.parentNode;
   while (parentClause && CLAUSE_NODES.indexOf(parentClause.nodeName) === -1) {
     parentClause = parentClause.parentNode;
   }
+  return parentClause;
+}
 
-  if(!parentClause) return;
+function findLocalReferences(parentClause, name) {
+  let vars = parentClause.querySelectorAll('var');
+  let references = [];
 
-  var vars = parentClause.querySelectorAll('var');
-
-  for (var i = 0; i < vars.length; i++) {
-    var $var = vars[i];
+  for (let i = 0; i < vars.length; i++) {
+    let $var = vars[i];
 
     if ($var.innerHTML === name) {
       references.push($var);
@@ -540,21 +642,38 @@ function findLocalReferences ($elem) {
   return references;
 }
 
+let REFERENCED_CLASSES = Array.from({ length: 7 }, (x, i) => `referenced${i}`);
+function chooseHighlightIndex(parentClause) {
+  let counts = REFERENCED_CLASSES.map($class => parentClause.getElementsByClassName($class).length);
+  // Find the earliest index with the lowest count.
+  let minCount = Infinity;
+  let index = null;
+  for (let i = 0; i < counts.length; i++) {
+    if (counts[i] < minCount) {
+      minCount = counts[i];
+      index = i;
+    }
+  }
+  return index;
+}
+
 function toggleFindLocalReferences($elem) {
-  var references = findLocalReferences($elem);
+  let parentClause = findContainer($elem);
+  let references = findLocalReferences(parentClause, $elem.innerHTML);
   if ($elem.classList.contains('referenced')) {
-    references.forEach(function ($reference) {
-      $reference.classList.remove('referenced');
+    references.forEach($reference => {
+      $reference.classList.remove('referenced', ...REFERENCED_CLASSES);
     });
   } else {
-    references.forEach(function ($reference) {
-      $reference.classList.add('referenced');
+    let index = chooseHighlightIndex(parentClause);
+    references.forEach($reference => {
+      $reference.classList.add('referenced', `referenced${index}`);
     });
   }
 }
 
-function installFindLocalReferences () {
-  document.addEventListener('click', function (e) {
+function installFindLocalReferences() {
+  document.addEventListener('click', e => {
     if (e.target.nodeName === 'VAR') {
       toggleFindLocalReferences(e.target);
     }
@@ -562,9 +681,6 @@ function installFindLocalReferences () {
 }
 
 document.addEventListener('DOMContentLoaded', installFindLocalReferences);
-
-
-
 
 // The following license applies to the fuzzysearch function
 // The MIT License (MIT)
@@ -586,11 +702,11 @@ document.addEventListener('DOMContentLoaded', installFindLocalReferences);
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-function fuzzysearch (searchString, haystack, caseInsensitive) {
-  var tlen = haystack.length;
-  var qlen = searchString.length;
-  var chunks = 1;
-  var finding = false;
+function fuzzysearch(searchString, haystack, caseInsensitive) {
+  let tlen = haystack.length;
+  let qlen = searchString.length;
+  let chunks = 1;
+  let finding = false;
 
   if (qlen > tlen) {
     return false;
@@ -606,10 +722,11 @@ function fuzzysearch (searchString, haystack, caseInsensitive) {
     }
   }
 
-  outer: for (var i = 0, j = 0; i < qlen; i++) {
-    var nch = searchString[i];
+  let j = 0;
+  outer: for (let i = 0; i < qlen; i++) {
+    let nch = searchString[i];
     while (j < tlen) {
-      var targetChar = haystack[j++];
+      let targetChar = haystack[j++];
       if (targetChar === nch) {
         finding = true;
         continue outer;
@@ -620,112 +737,22 @@ function fuzzysearch (searchString, haystack, caseInsensitive) {
       }
     }
 
-    if (caseInsensitive) { return false; }
+    if (caseInsensitive) {
+      return false;
+    }
 
     return fuzzysearch(searchString.toLowerCase(), haystack.toLowerCase(), true);
   }
 
-  return { caseMatch: !caseInsensitive, chunks: chunks, prefix: j <= qlen };
+  return { caseMatch: !caseInsensitive, chunks, prefix: j <= qlen };
 }
 
-var Toolbox = {
-  init: function () {
-    this.$container = document.createElement('div');
-    this.$container.classList.add('toolbox');
-    this.$permalink = document.createElement('a');
-    this.$permalink.textContent = 'Permalink';
-    this.$pinLink = document.createElement('a');
-    this.$pinLink.textContent = 'Pin';
-    this.$pinLink.setAttribute('href', '#');
-    this.$pinLink.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      menu.togglePinEntry(this.entry.id);
-    }.bind(this));
-
-    this.$refsLink = document.createElement('a');
-    this.$refsLink.setAttribute('href', '#');
-    this.$refsLink.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      referencePane.showReferencesFor(this.entry);
-    }.bind(this));
-    this.$container.appendChild(this.$permalink);
-    this.$container.appendChild(this.$pinLink);
-    this.$container.appendChild(this.$refsLink);
-    document.body.appendChild(this.$container);
-  },
-
-  activate: function (el, entry, target) {
-    if (el === this._activeEl) return;
-    this.active = true;
-    this.entry = entry;
-    this.$container.classList.add('active');
-    this.top = el.offsetTop - this.$container.offsetHeight - 10;
-    this.left = el.offsetLeft;
-    this.$container.setAttribute('style', 'left: ' + this.left + 'px; top: ' + this.top + 'px');
-    this.updatePermalink();
-    this.updateReferences();
-    this._activeEl = el;
-    if (this.top < document.body.scrollTop && el === target) {
-      // don't scroll unless it's a small thing (< 200px)
-      this.$container.scrollIntoView();
-    }
-  },
-
-  updatePermalink: function () {
-    this.$permalink.setAttribute('href', '#' + this.entry.id);
-  },
-
-  updateReferences: function () {
-    this.$refsLink.textContent = 'References (' + this.entry.referencingIds.length + ')';
-  },
-
-  activateIfMouseOver: function (e) {
-    var ref = this.findReferenceUnder(e.target);
-    if (ref && (!this.active || e.pageY > this._activeEl.offsetTop)) {
-      var entry = menu.search.biblio.byId[ref.id];
-      this.activate(ref.element, entry, e.target);
-    } else if (this.active && ((e.pageY < this.top) || e.pageY > (this._activeEl.offsetTop + this._activeEl.offsetHeight))) {
-      this.deactivate();
-    }
-  },
-
-  findReferenceUnder: function (el) {
-    while (el) {
-      var parent = el.parentNode;
-      if (el.nodeName === 'H1' && parent.nodeName.match(/EMU-CLAUSE|EMU-ANNEX|EMU-INTRO/) && parent.id) {
-        return { element: el, id: parent.id };
-      } else if (el.nodeName.match(/EMU-(?!CLAUSE|XREF|ANNEX|INTRO)|DFN/) &&
-                el.id && el.id[0] !== '_') {
-        if (el.nodeName === 'EMU-FIGURE' || el.nodeName === 'EMU-TABLE' || el.nodeName === 'EMU-EXAMPLE') {
-          // return the figcaption element
-          return { element: el.children[0].children[0], id: el.id };
-        } else if (el.nodeName === 'EMU-PRODUCTION') {
-          // return the LHS non-terminal element
-          return { element: el.children[0], id: el.id };
-        } else {
-          return { element: el, id: el.id };
-        }
-      }
-      el = parent;
-    }
-  },
-
-  deactivate: function () {
-    this.$container.classList.remove('active');
-    this._activeEl = null;
-    this.activeElBounds = null;
-    this.active = false;
-  }
-}
-
-var referencePane = {
-  init: function() {
+let referencePane = {
+  init() {
     this.$container = document.createElement('div');
     this.$container.setAttribute('id', 'references-pane-container');
 
-    var $spacer = document.createElement('div');
+    let $spacer = document.createElement('div');
     $spacer.setAttribute('id', 'references-pane-spacer');
 
     this.$pane = document.createElement('div');
@@ -736,18 +763,19 @@ var referencePane = {
 
     this.$header = document.createElement('div');
     this.$header.classList.add('menu-pane-header');
-    this.$header.textContent = 'References to ';
+    this.$headerText = document.createElement('span');
+    this.$header.appendChild(this.$headerText);
     this.$headerRefId = document.createElement('a');
     this.$header.appendChild(this.$headerRefId);
     this.$closeButton = document.createElement('span');
     this.$closeButton.setAttribute('id', 'references-pane-close');
-    this.$closeButton.addEventListener('click', function (e) {
+    this.$closeButton.addEventListener('click', () => {
       this.deactivate();
-    }.bind(this));
+    });
     this.$header.appendChild(this.$closeButton);
 
     this.$pane.appendChild(this.$header);
-    var tableContainer = document.createElement('div');
+    let tableContainer = document.createElement('div');
     tableContainer.setAttribute('id', 'references-pane-table-container');
 
     this.$table = document.createElement('table');
@@ -761,70 +789,238 @@ var referencePane = {
     menu.$specContainer.appendChild(this.$container);
   },
 
-  activate: function () {
+  activate() {
     this.$container.classList.add('active');
   },
 
-  deactivate: function () {
+  deactivate() {
     this.$container.classList.remove('active');
+    this.state = null;
   },
 
   showReferencesFor(entry) {
     this.activate();
-    var newBody = document.createElement('tbody');
-    var previousId;
-    var previousCell;
-    var dupCount = 0;
+    this.state = { type: 'ref', id: entry.id };
+    this.$headerText.textContent = 'References to ';
+    let newBody = document.createElement('tbody');
+    let previousId;
+    let previousCell;
+    let dupCount = 0;
     this.$headerRefId.textContent = '#' + entry.id;
-    this.$headerRefId.setAttribute('href', '#' + entry.id);
-    entry.referencingIds.map(function (id) {
-      var target = document.getElementById(id);
-      var cid = findParentClauseId(target);
-      var clause = menu.search.biblio.byId[cid];
-      return { id: id, clause: clause }
-    }).sort(function (a, b) {
-      return sortByClauseNumber(a.clause, b.clause);
-    }).forEach(function (record, i) {
-      if (previousId === record.clause.id) {
-        previousCell.innerHTML += ' (<a href="#' + record.id + '">' + (dupCount + 2) + '</a>)';
-        dupCount++;
-      } else {
-        var row = newBody.insertRow();
-        var cell = row.insertCell();
-        cell.innerHTML = record.clause.number;
-        cell = row.insertCell();
-        cell.innerHTML = '<a href="#' + record.id + '">' + record.clause.titleHTML + '</a>';
-        previousCell = cell;
-        previousId = record.clause.id;
-        dupCount = 0;
-      }
-    }, this);
+    this.$headerRefId.setAttribute('href', makeLinkToId(entry.id));
+    this.$headerRefId.style.display = 'inline';
+    (entry.referencingIds || [])
+      .map(id => {
+        let cid = menu.search.biblio.refParentClause[id];
+        let clause = menu.search.biblio.byId[cid];
+        if (clause == null) {
+          throw new Error('could not find clause for id ' + cid);
+        }
+        return { id, clause };
+      })
+      .sort((a, b) => sortByClauseNumber(a.clause, b.clause))
+      .forEach(record => {
+        if (previousId === record.clause.id) {
+          previousCell.innerHTML += ` (<a href="${makeLinkToId(record.id)}">${dupCount + 2}</a>)`;
+          dupCount++;
+        } else {
+          let row = newBody.insertRow();
+          let cell = row.insertCell();
+          cell.innerHTML = record.clause.number;
+          cell = row.insertCell();
+          cell.innerHTML = `<a href="${makeLinkToId(record.id)}">${record.clause.titleHTML}</a>`;
+          previousCell = cell;
+          previousId = record.clause.id;
+          dupCount = 0;
+        }
+      }, this);
     this.$table.removeChild(this.$tableBody);
     this.$tableBody = newBody;
     this.$table.appendChild(this.$tableBody);
-  }
-}
-function findParentClauseId(node) {
-  while (node && node.nodeName !== 'EMU-CLAUSE' && node.nodeName !== 'EMU-INTRO' && node.nodeName !== 'EMU-ANNEX') {
-    node = node.parentNode;
-  }
-  if (!node) return null;
-  return node.getAttribute('id');
-}
+  },
 
-function sortByClauseNumber(c1, c2) {
-  var c1c = c1.number.split('.');
-  var c2c = c2.number.split('.');
+  showSDOs(sdos, alternativeId) {
+    let rhs = document.getElementById(alternativeId);
+    let parentName = rhs.parentNode.getAttribute('name');
+    let colons = rhs.parentNode.querySelector('emu-geq');
+    rhs = rhs.cloneNode(true);
+    rhs.querySelectorAll('emu-params,emu-constraints').forEach(e => {
+      e.remove();
+    });
+    rhs.querySelectorAll('[id]').forEach(e => {
+      e.removeAttribute('id');
+    });
+    rhs.querySelectorAll('a').forEach(e => {
+      e.parentNode.replaceChild(document.createTextNode(e.textContent), e);
+    });
 
-  for (var i = 0; i < c1c.length; i++) {
+    // prettier-ignore
+    this.$headerText.innerHTML = `Syntax-Directed Operations for<br><a href="${makeLinkToId(alternativeId)}" class="menu-pane-header-production"><emu-nt>${parentName}</emu-nt> ${colons.outerHTML} </a>`;
+    this.$headerText.querySelector('a').append(rhs);
+    this.showSDOsBody(sdos, alternativeId);
+  },
+
+  showSDOsBody(sdos, alternativeId) {
+    this.activate();
+    this.state = { type: 'sdo', id: alternativeId, html: this.$headerText.innerHTML };
+    this.$headerRefId.style.display = 'none';
+    let newBody = document.createElement('tbody');
+    Object.keys(sdos).forEach(sdoName => {
+      let pair = sdos[sdoName];
+      let clause = pair.clause;
+      let ids = pair.ids;
+      let first = ids[0];
+      let row = newBody.insertRow();
+      let cell = row.insertCell();
+      cell.innerHTML = clause;
+      cell = row.insertCell();
+      let html = '<a href="' + makeLinkToId(first) + '">' + sdoName + '</a>';
+      for (let i = 1; i < ids.length; ++i) {
+        html += ' (<a href="' + makeLinkToId(ids[i]) + '">' + (i + 1) + '</a>)';
+      }
+      cell.innerHTML = html;
+    });
+    this.$table.removeChild(this.$tableBody);
+    this.$tableBody = newBody;
+    this.$table.appendChild(this.$tableBody);
+  },
+};
+
+let Toolbox = {
+  init() {
+    this.$outer = document.createElement('div');
+    this.$outer.classList.add('toolbox-container');
+    this.$container = document.createElement('div');
+    this.$container.classList.add('toolbox');
+    this.$outer.appendChild(this.$container);
+    this.$permalink = document.createElement('a');
+    this.$permalink.textContent = 'Permalink';
+    this.$pinLink = document.createElement('a');
+    this.$pinLink.textContent = 'Pin';
+    this.$pinLink.setAttribute('href', '#');
+    this.$pinLink.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      menu.togglePinEntry(this.entry.id);
+      this.$pinLink.textContent = menu._pinnedIds[this.entry.id] ? 'Unpin' : 'Pin';
+    });
+
+    this.$refsLink = document.createElement('a');
+    this.$refsLink.setAttribute('href', '#');
+    this.$refsLink.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      referencePane.showReferencesFor(this.entry);
+    });
+    this.$container.appendChild(this.$permalink);
+    this.$container.appendChild(this.$pinLink);
+    this.$container.appendChild(this.$refsLink);
+    document.body.appendChild(this.$outer);
+  },
+
+  activate(el, entry, target) {
+    if (el === this._activeEl) return;
+    sdoBox.deactivate();
+    this.active = true;
+    this.entry = entry;
+    this.$pinLink.textContent = menu._pinnedIds[entry.id] ? 'Unpin' : 'Pin';
+    this.$outer.classList.add('active');
+    this.top = el.offsetTop - this.$outer.offsetHeight;
+    this.left = el.offsetLeft - 10;
+    this.$outer.setAttribute('style', 'left: ' + this.left + 'px; top: ' + this.top + 'px');
+    this.updatePermalink();
+    this.updateReferences();
+    this._activeEl = el;
+    if (this.top < document.body.scrollTop && el === target) {
+      // don't scroll unless it's a small thing (< 200px)
+      this.$outer.scrollIntoView();
+    }
+  },
+
+  updatePermalink() {
+    this.$permalink.setAttribute('href', makeLinkToId(this.entry.id));
+  },
+
+  updateReferences() {
+    this.$refsLink.textContent = `References (${(this.entry.referencingIds || []).length})`;
+  },
+
+  activateIfMouseOver(e) {
+    let ref = this.findReferenceUnder(e.target);
+    if (ref && (!this.active || e.pageY > this._activeEl.offsetTop)) {
+      let entry = menu.search.biblio.byId[ref.id];
+      this.activate(ref.element, entry, e.target);
+    } else if (
+      this.active &&
+      (e.pageY < this.top || e.pageY > this._activeEl.offsetTop + this._activeEl.offsetHeight)
+    ) {
+      this.deactivate();
+    }
+  },
+
+  findReferenceUnder(el) {
+    while (el) {
+      let parent = el.parentNode;
+      if (el.nodeName === 'EMU-RHS' || el.nodeName === 'EMU-PRODUCTION') {
+        return null;
+      }
+      if (
+        el.nodeName === 'H1' &&
+        parent.nodeName.match(/EMU-CLAUSE|EMU-ANNEX|EMU-INTRO/) &&
+        parent.id
+      ) {
+        return { element: el, id: parent.id };
+      } else if (el.nodeName === 'EMU-NT') {
+        if (
+          parent.nodeName === 'EMU-PRODUCTION' &&
+          parent.id &&
+          parent.id[0] !== '_' &&
+          parent.firstElementChild === el
+        ) {
+          // return the LHS non-terminal element
+          return { element: el, id: parent.id };
+        }
+        return null;
+      } else if (
+        el.nodeName.match(/EMU-(?!CLAUSE|XREF|ANNEX|INTRO)|DFN/) &&
+        el.id &&
+        el.id[0] !== '_'
+      ) {
+        if (
+          el.nodeName === 'EMU-FIGURE' ||
+          el.nodeName === 'EMU-TABLE' ||
+          el.nodeName === 'EMU-EXAMPLE'
+        ) {
+          // return the figcaption element
+          return { element: el.children[0].children[0], id: el.id };
+        } else {
+          return { element: el, id: el.id };
+        }
+      }
+      el = parent;
+    }
+  },
+
+  deactivate() {
+    this.$outer.classList.remove('active');
+    this._activeEl = null;
+    this.active = false;
+  },
+};
+
+function sortByClauseNumber(clause1, clause2) {
+  let c1c = clause1.number.split('.');
+  let c2c = clause2.number.split('.');
+
+  for (let i = 0; i < c1c.length; i++) {
     if (i >= c2c.length) {
       return 1;
     }
 
-    var c1 = c1c[i];
-    var c2 = c2c[i];
-    var c1cn = Number(c1);
-    var c2cn = Number(c2);
+    let c1 = c1c[i];
+    let c2 = c2c[i];
+    let c1cn = Number(c1);
+    let c2cn = Number(c2);
 
     if (Number.isNaN(c1cn) && Number.isNaN(c2cn)) {
       if (c1 > c2) {
@@ -836,7 +1032,7 @@ function sortByClauseNumber(c1, c2) {
       return -1;
     } else if (Number.isNaN(c1cn) && !Number.isNaN(c2cn)) {
       return 1;
-    } else if(c1cn > c2cn) {
+    } else if (c1cn > c2cn) {
       return 1;
     } else if (c1cn < c2cn) {
       return -1;
@@ -849,58 +1045,222 @@ function sortByClauseNumber(c1, c2) {
   return -1;
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+function makeLinkToId(id) {
+  let hash = '#' + id;
+  if (typeof idToSection === 'undefined' || !idToSection[id]) {
+    return hash;
+  }
+  let targetSec = idToSection[id];
+  return (targetSec === 'index' ? './' : targetSec + '.html') + hash;
+}
+
+function doShortcut(e) {
+  if (!(e.target instanceof HTMLElement)) {
+    return;
+  }
+  let target = e.target;
+  let name = target.nodeName.toLowerCase();
+  if (name === 'textarea' || name === 'input' || name === 'select' || target.isContentEditable) {
+    return;
+  }
+  if (e.altKey || e.ctrlKey || e.metaKey) {
+    return;
+  }
+  if (e.key === 'm' && usesMultipage) {
+    let pathParts = location.pathname.split('/');
+    let hash = location.hash;
+    if (pathParts[pathParts.length - 2] === 'multipage') {
+      if (hash === '') {
+        let sectionName = pathParts[pathParts.length - 1];
+        if (sectionName.endsWith('.html')) {
+          sectionName = sectionName.slice(0, -5);
+        }
+        if (idToSection['sec-' + sectionName] !== undefined) {
+          hash = '#sec-' + sectionName;
+        }
+      }
+      location = pathParts.slice(0, -2).join('/') + '/' + hash;
+    } else {
+      location = 'multipage/' + hash;
+    }
+  } else if (e.key === 'u') {
+    document.documentElement.classList.toggle('show-ao-annotations');
+  } else if (e.key === '?') {
+    document.getElementById('shortcuts-help').classList.toggle('active');
+  }
+}
+
+function init() {
+  menu = new Menu();
+  let $container = document.getElementById('spec-container');
+  $container.addEventListener(
+    'mouseover',
+    debounce(e => {
+      Toolbox.activateIfMouseOver(e);
+    })
+  );
+  document.addEventListener(
+    'keydown',
+    debounce(e => {
+      if (e.code === 'Escape') {
+        if (Toolbox.active) {
+          Toolbox.deactivate();
+        }
+        document.getElementById('shortcuts-help').classList.remove('active');
+      }
+    })
+  );
+}
+
+document.addEventListener('keypress', doShortcut);
+
+document.addEventListener('DOMContentLoaded', () => {
   Toolbox.init();
   referencePane.init();
-})
-var CLAUSE_NODES = ['EMU-CLAUSE', 'EMU-INTRO', 'EMU-ANNEX'];
-function findLocalReferences ($elem) {
-  var name = $elem.innerHTML;
-  var references = [];
+});
 
-  var parentClause = $elem.parentNode;
-  while (parentClause && CLAUSE_NODES.indexOf(parentClause.nodeName) === -1) {
-    parentClause = parentClause.parentNode;
+// preserve state during navigation
+
+function getTocPath(li) {
+  let path = [];
+  let pointer = li;
+  while (true) {
+    let parent = pointer.parentElement;
+    if (parent == null) {
+      return null;
+    }
+    let index = [].indexOf.call(parent.children, pointer);
+    if (index == -1) {
+      return null;
+    }
+    path.unshift(index);
+    pointer = parent.parentElement;
+    if (pointer == null) {
+      return null;
+    }
+    if (pointer.id === 'menu-toc') {
+      break;
+    }
+    if (pointer.tagName !== 'LI') {
+      return null;
+    }
   }
+  return path;
+}
 
-  if(!parentClause) return;
+function activateTocPath(path) {
+  try {
+    let pointer = document.getElementById('menu-toc');
+    for (let index of path) {
+      pointer = pointer.querySelector('ol').children[index];
+    }
+    pointer.classList.add('active');
+  } catch (e) {
+    // pass
+  }
+}
 
-  var vars = parentClause.querySelectorAll('var');
+function getActiveTocPaths() {
+  return [...menu.$menu.querySelectorAll('.active')].map(getTocPath).filter(p => p != null);
+}
 
-  for (var i = 0; i < vars.length; i++) {
-    var $var = vars[i];
-
-    if ($var.innerHTML === name) {
-      references.push($var);
+function loadStateFromSessionStorage() {
+  if (!window.sessionStorage || typeof menu === 'undefined' || window.navigating) {
+    return;
+  }
+  if (sessionStorage.referencePaneState != null) {
+    let state = JSON.parse(sessionStorage.referencePaneState);
+    if (state != null) {
+      if (state.type === 'ref') {
+        let entry = menu.search.biblio.byId[state.id];
+        if (entry != null) {
+          referencePane.showReferencesFor(entry);
+        }
+      } else if (state.type === 'sdo') {
+        let sdos = sdoMap[state.id];
+        if (sdos != null) {
+          referencePane.$headerText.innerHTML = state.html;
+          referencePane.showSDOsBody(sdos, state.id);
+        }
+      }
+      delete sessionStorage.referencePaneState;
     }
   }
 
-  return references;
-}
+  if (sessionStorage.activeTocPaths != null) {
+    document
+      .getElementById('menu-toc')
+      .querySelectorAll('.active')
+      .forEach(e => {
+        e.classList.remove('active');
+      });
+    let active = JSON.parse(sessionStorage.activeTocPaths);
+    active.forEach(activateTocPath);
+    delete sessionStorage.activeTocPaths;
+  }
 
-function toggleFindLocalReferences($elem) {
-  var references = findLocalReferences($elem);
-  if ($elem.classList.contains('referenced')) {
-    references.forEach(function ($reference) {
-      $reference.classList.remove('referenced');
-    });
-  } else {
-    references.forEach(function ($reference) {
-      $reference.classList.add('referenced');
-    });
+  if (sessionStorage.searchValue != null) {
+    let value = JSON.parse(sessionStorage.searchValue);
+    menu.search.$searchBox.value = value;
+    menu.search.search(value);
+    delete sessionStorage.searchValue;
+  }
+
+  if (sessionStorage.tocScroll != null) {
+    let tocScroll = JSON.parse(sessionStorage.tocScroll);
+    menu.$toc.scrollTop = tocScroll;
+    delete sessionStorage.tocScroll;
   }
 }
 
-function installFindLocalReferences () {
-  document.addEventListener('click', function (e) {
-    if (e.target.nodeName === 'VAR') {
-      toggleFindLocalReferences(e.target);
+document.addEventListener('DOMContentLoaded', loadStateFromSessionStorage);
+
+window.addEventListener('pageshow', loadStateFromSessionStorage);
+
+window.addEventListener('beforeunload', () => {
+  if (!window.sessionStorage || typeof menu === 'undefined') {
+    return;
+  }
+  sessionStorage.referencePaneState = JSON.stringify(referencePane.state || null);
+  sessionStorage.activeTocPaths = JSON.stringify(getActiveTocPaths());
+  sessionStorage.searchValue = JSON.stringify(menu.search.$searchBox.value);
+  sessionStorage.tocScroll = JSON.stringify(menu.$toc.scrollTop);
+});
+
+'use strict';
+let decimalBullet = Array.from({ length: 100 }, (a, i) => '' + (i + 1));
+let alphaBullet = Array.from({ length: 26 }, (a, i) => String.fromCharCode('a'.charCodeAt(0) + i));
+
+// prettier-ignore
+let romanBullet = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii', 'xix', 'xx', 'xxi', 'xxii', 'xxiii', 'xxiv', 'xxv'];
+// prettier-ignore
+let bullets = [decimalBullet, alphaBullet, romanBullet, decimalBullet, alphaBullet, romanBullet];
+
+function addStepNumberText(ol, parentIndex) {
+  for (let i = 0; i < ol.children.length; ++i) {
+    let child = ol.children[i];
+    let index = parentIndex.concat([i]);
+    let applicable = bullets[Math.min(index.length - 1, 5)];
+    let span = document.createElement('span');
+    span.textContent = (applicable[i] || '?') + '. ';
+    span.style.fontSize = '0';
+    span.setAttribute('aria-hidden', 'true');
+    child.prepend(span);
+    let sublist = child.querySelector('ol');
+    if (sublist != null) {
+      addStepNumberText(sublist, index);
     }
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('emu-alg > ol').forEach(ol => {
+    addStepNumberText(ol, []);
   });
-}
+});
 
-document.addEventListener('DOMContentLoaded', installFindLocalReferences);
-</script><style>body {
+let sdoMap = JSON.parse(`{}`);
+let biblio = JSON.parse(`{"refsByClause":{"sec-properties-of-the-string-constructor":["_ref_0"],"sec-dedent-template-strings-array":["_ref_1","_ref_5","_ref_6"],"sec-string.dedent":["_ref_2","_ref_3","_ref_4"],"sec-dedent-strings-array":["_ref_7","_ref_8","_ref_9","_ref_10"],"sec-is-all-white-space":["_ref_11"]},"entries":[{"type":"clause","id":"sec-scope","titleHTML":"Scope","number":"1"},{"type":"table","id":"table-globaldedentregistry-record-fields","number":1,"caption":"Table 1: GlobalDedentRegistry Record Fields","referencingIds":["_ref_1"]},{"type":"op","aoid":"DedentTemplateStringsArray","refId":"sec-dedent-template-strings-array"},{"type":"clause","id":"sec-dedent-template-strings-array","title":"DedentTemplateStringsArray ( template )","titleHTML":"DedentTemplateStringsArray ( <var>template</var> )","number":"2.1.1","referencingIds":["_ref_2","_ref_3"]},{"type":"op","aoid":"DedentStringsArray","refId":"sec-dedent-strings-array"},{"type":"clause","id":"sec-dedent-strings-array","title":"DedentStringsArray ( template )","titleHTML":"DedentStringsArray ( <var>template</var> )","number":"2.1.2","referencingIds":["_ref_5","_ref_6"]},{"type":"op","aoid":"LeadingWhiteSpaceSubstring","refId":"sec-leading-white-space-substring"},{"type":"clause","id":"sec-leading-white-space-substring","title":"LeadingWhiteSpaceSubstring ( str )","titleHTML":"LeadingWhiteSpaceSubstring ( <var>str</var> )","number":"2.1.3","referencingIds":["_ref_9","_ref_11"]},{"type":"op","aoid":"IsAllWhiteSpace","refId":"sec-is-all-white-space"},{"type":"clause","id":"sec-is-all-white-space","title":"IsAllWhiteSpace ( str )","titleHTML":"IsAllWhiteSpace ( <var>str</var> )","number":"2.1.4","referencingIds":["_ref_7","_ref_8"]},{"type":"op","aoid":"LongestLeadingMatchingSubstring","refId":"sec-longest-leading-matching-substring"},{"type":"clause","id":"sec-longest-leading-matching-substring","title":"LongestLeadingMatchingSubstring ( a, b )","titleHTML":"LongestLeadingMatchingSubstring ( <var>a</var>, <var>b</var> )","number":"2.1.5","referencingIds":["_ref_10"]},{"type":"clause","id":"sec-string.dedent","title":"String.dedent ( templateOrFn, ...substitutions )","titleHTML":"String.dedent ( <var>templateOrFn</var>, ...<var>substitutions</var> )","number":"2.1"},{"type":"op","aoid":"CookTemplateStringsArray","refId":"sec-cook-template-strings-array"},{"type":"clause","id":"sec-cook-template-strings-array","title":"CookTemplateStringsArray ( template, substitutions )","titleHTML":"CookTemplateStringsArray ( <var>template</var>, <var>substitutions</var> )","number":"2.2","referencingIds":["_ref_4"]},{"type":"clause","id":"sec-properties-of-the-string-constructor","title":"Properties of the String Constructor ","titleHTML":"Properties of the String Constructor <emu-xref href=\\"#sec-properties-of-the-string-constructor\\"></emu-xref>","number":"2","referencingIds":["_ref_0"]},{"type":"clause","id":"sec-copyright-and-software-license","title":"Copyright & Software License","titleHTML":"Copyright &amp; Software License","number":"A"}]}`);
+;let usesMultipage = false</script><style>body {
   display: flex;
   font-size: 18px;
   line-height: 1.5;
@@ -916,6 +1276,7 @@ document.addEventListener('DOMContentLoaded', installFindLocalReferences);
   flex-basis: 66%;
   box-sizing: border-box;
   overflow: hidden;
+  padding-bottom: 1em;
 }
 
 body.oldtoc {
@@ -923,8 +1284,8 @@ body.oldtoc {
 }
 
 a {
-    text-decoration: none;
-    color: #206ca7;
+  text-decoration: none;
+  color: #206ca7;
 }
 
 a:visited {
@@ -932,15 +1293,51 @@ a:visited {
 }
 
 a:hover {
-    text-decoration: underline;
-    color: #239dee;
+  text-decoration: underline;
+  color: #239dee;
 }
 
+a.e-user-code,
+span.e-user-code {
+  white-space: nowrap;
+}
+
+a.e-user-code::before,
+span.e-user-code::before {
+  display: none;
+  color: brown;
+  background-color: white;
+  border: 2pt solid brown;
+  padding: 0.3ex;
+  margin: 0 0.25em 0 0;
+  line-height: 1;
+  vertical-align: text-top;
+  text-transform: uppercase;
+  font-family: 'Comic Code', sans-serif;
+  font-weight: 900;
+  font-size: x-small;
+}
+
+a.e-user-code:hover::before,
+span.e-user-code:hover::before {
+  background-color: brown;
+  color: white;
+}
+
+html.show-ao-annotations a.e-user-code::before,
+html.show-ao-annotations span.e-user-code::before {
+  display: inline-block;
+}
+
+a.e-user-code::before,
+span.e-user-code::before {
+  content: 'UC';
+}
 
 code {
-    font-weight: bold;
-    font-family: Consolas, Monaco, monospace;
-    white-space: pre;
+  font-weight: bold;
+  font-family: Consolas, Monaco, monospace;
+  white-space: pre;
 }
 
 pre code {
@@ -954,13 +1351,13 @@ pre code.hljs {
 }
 
 ol.toc {
-    list-style: none;
-    padding-left: 0;
+  list-style: none;
+  padding-left: 0;
 }
 
 ol.toc ol.toc {
-    padding-left: 2ex;
-    list-style: none;
+  padding-left: 2ex;
+  list-style: none;
 }
 
 var {
@@ -969,8 +1366,40 @@ var {
   cursor: pointer;
 }
 
-var.referenced {
+var.referenced0 {
+  color: inherit;
   background-color: #ffff33;
+  box-shadow: 0 0 0 2px #ffff33;
+}
+var.referenced1 {
+  color: inherit;
+  background-color: #ff87a2;
+  box-shadow: 0 0 0 2px #ff87a2;
+}
+var.referenced2 {
+  color: inherit;
+  background-color: #96e885;
+  box-shadow: 0 0 0 2px #96e885;
+}
+var.referenced3 {
+  color: inherit;
+  background-color: #3eeed2;
+  box-shadow: 0 0 0 2px #3eeed2;
+}
+var.referenced4 {
+  color: inherit;
+  background-color: #eacfb6;
+  box-shadow: 0 0 0 2px #eacfb6;
+}
+var.referenced5 {
+  color: inherit;
+  background-color: #82ddff;
+  box-shadow: 0 0 0 2px #82ddff;
+}
+var.referenced6 {
+  color: inherit;
+  background-color: #ffbcf2;
+  box-shadow: 0 0 0 2px #ffbcf2;
 }
 
 emu-const {
@@ -980,16 +1409,43 @@ emu-const {
 emu-val {
   font-weight: bold;
 }
-emu-alg ol, emu-alg ol ol ol ol {
-    list-style-type: decimal;
+
+/* depth 1 */
+emu-alg ol,
+/* depth 4 */
+emu-alg ol ol ol ol,
+emu-alg ol.nested-thrice,
+emu-alg ol.nested-twice ol,
+emu-alg ol.nested-once ol ol {
+  list-style-type: decimal;
 }
 
-emu-alg ol ol, emu-alg ol ol ol ol ol {
-    list-style-type: lower-alpha;
+/* depth 2 */
+emu-alg ol ol,
+emu-alg ol.nested-once,
+/* depth 5 */
+emu-alg ol ol ol ol ol,
+emu-alg ol.nested-four-times,
+emu-alg ol.nested-thrice ol,
+emu-alg ol.nested-twice ol ol,
+emu-alg ol.nested-once ol ol ol {
+  list-style-type: lower-alpha;
 }
 
-emu-alg ol ol ol, ol ol ol ol ol ol {
-    list-style-type: lower-roman;
+/* depth 3 */
+emu-alg ol ol ol,
+emu-alg ol.nested-twice,
+emu-alg ol.nested-once ol,
+/* depth 6 */
+emu-alg ol ol ol ol ol ol,
+emu-alg ol.nested-lots,
+emu-alg ol.nested-four-times ol,
+emu-alg ol.nested-thrice ol ol,
+emu-alg ol.nested-twice ol ol ol,
+emu-alg ol.nested-once ol ol ol ol,
+/* depth 7+ */
+emu-alg ol.nested-lots ol {
+  list-style-type: lower-roman;
 }
 
 emu-eqn {
@@ -1007,29 +1463,32 @@ emu-eqn div:first-child {
 }
 
 emu-note {
-    margin: 1em 0;
-    color: #666;
-    border-left: 5px solid #ccc;
-    display: flex;
-    flex-direction: row;
+  margin: 1em 0;
+  display: flex;
+  flex-direction: row;
+  color: inherit;
+  border-left: 5px solid #52e052;
+  background: #e9fbe9;
+  padding: 10px 10px 10px 0;
 }
 
 emu-note > span.note {
-    flex-basis: 100px;
-    min-width: 100px;
-    flex-grow: 0;
-    flex-shrink: 1;
-    text-transform: uppercase;
-    padding-left: 5px;
+  flex-basis: 100px;
+  min-width: 100px;
+  flex-grow: 0;
+  flex-shrink: 1;
+  text-transform: uppercase;
+  padding-left: 5px;
 }
 
-emu-note[type=editor] {
+emu-note[type='editor'] {
   border-left-color: #faa;
 }
 
 emu-note > div.note-contents {
   flex-grow: 1;
   flex-shrink: 1;
+  overflow: auto;
 }
 
 emu-note > div.note-contents > p:first-of-type {
@@ -1042,7 +1501,7 @@ emu-note > div.note-contents > p:last-of-type {
 
 emu-table td code {
   white-space: normal;
-} 
+}
 
 emu-figure {
   display: block;
@@ -1067,99 +1526,120 @@ emu-table figure {
 }
 
 emu-production {
-    display: block;
+  display: block;
 }
 
-emu-grammar[type="example"] emu-production,
-emu-grammar[type="definition"] emu-production {
-    margin-top: 1em;
-    margin-bottom: 1em;
-    margin-left: 5ex;
+emu-grammar[type='example'] emu-production,
+emu-grammar[type='definition'] emu-production {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 5ex;
 }
 
-emu-grammar.inline, emu-production.inline,
-emu-grammar.inline emu-production emu-rhs, emu-production.inline emu-rhs,
-emu-grammar[collapsed] emu-production emu-rhs, emu-production[collapsed] emu-rhs {
-    display: inline;
-    padding-left: 1ex;
-    margin-left: 0;
+emu-grammar.inline,
+emu-production.inline,
+emu-grammar.inline emu-production emu-rhs,
+emu-production.inline emu-rhs,
+emu-grammar[collapsed] emu-production emu-rhs {
+  display: inline;
+  padding-left: 1ex;
+  margin-left: 0;
 }
 
-emu-grammar[collapsed] emu-production, emu-production[collapsed] {
-    margin: 0;
+emu-production[collapsed] emu-rhs {
+  display: inline;
+  padding-left: 0.5ex;
+  margin-left: 0;
+}
+
+emu-grammar[collapsed] emu-production,
+emu-production[collapsed] {
+  margin: 0;
 }
 
 emu-constraints {
-    font-size: .75em;
-    margin-right: 1ex;
+  font-size: 0.75em;
+  margin-right: 0.5ex;
 }
 
 emu-gann {
-    margin-right: 1ex;
+  margin-right: 0.5ex;
 }
 
 emu-gann emu-t:last-child,
 emu-gann emu-gprose:last-child,
 emu-gann emu-nt:last-child {
-    margin-right: 0;
+  margin-right: 0;
 }
 
 emu-geq {
-    margin-left: 1ex;
-    font-weight: bold;
+  margin-left: 0.5ex;
+  font-weight: bold;
 }
 
 emu-oneof {
-    font-weight: bold;
-    margin-left: 1ex;
+  font-weight: bold;
+  margin-left: 0.5ex;
 }
 
 emu-nt {
-    display: inline-block;
-    font-style: italic;
-    white-space: nowrap;
-    text-indent: 0;
+  display: inline-block;
+  font-style: italic;
+  white-space: nowrap;
+  text-indent: 0;
 }
 
-emu-nt a, emu-nt a:visited {
+emu-nt a,
+emu-nt a:visited {
   color: #333;
 }
 
 emu-rhs emu-nt {
-    margin-right: 1ex;
+  margin-right: 0.5ex;
 }
 
 emu-t {
-    display: inline-block;
-    font-family: monospace;
-    font-weight: bold;
-    white-space: nowrap;
-    text-indent: 0;
+  display: inline-block;
+  font-family: monospace;
+  font-weight: bold;
+  white-space: nowrap;
+  text-indent: 0;
 }
 
 emu-production emu-t {
-    margin-right: 1ex;
+  margin-right: 0.5ex;
 }
 
 emu-rhs {
-    display: block;
-    padding-left: 75px;
-    text-indent: -25px;
+  display: block;
+  padding-left: 75px;
+  text-indent: -25px;
+}
+
+emu-production:not([collapsed]) emu-rhs {
+  border: 0.2ex dashed transparent;
+}
+
+emu-production:not([collapsed]) emu-rhs:hover {
+  border-color: #888;
+  background-color: #f0f0f0;
 }
 
 emu-mods {
-    font-size: .85em;
-    vertical-align: sub;
-    font-style: normal;
-    font-weight: normal;
+  font-size: 0.85em;
+  vertical-align: sub;
+  font-style: normal;
+  font-weight: normal;
 }
 
-emu-params, emu-opt {
+emu-params,
+emu-opt {
   margin-right: 1ex;
   font-family: monospace;
 }
 
-emu-params, emu-constraints {
+emu-params,
+emu-constraints {
   color: #2aa198;
 }
 
@@ -1168,12 +1648,12 @@ emu-opt {
 }
 
 emu-gprose {
-    font-size: 0.9em;
-    font-family: Helvetica, Arial, sans-serif;
+  font-size: 0.9em;
+  font-family: Helvetica, Arial, sans-serif;
 }
 
 emu-production emu-gprose {
-    margin-right: 1ex;
+  margin-right: 1ex;
 }
 
 h1.shortname {
@@ -1185,20 +1665,19 @@ h1.shortname {
 h1.version {
   color: #f60;
   font-size: 1.5em;
-  margin: 0;
 }
 
 h1.title {
-  margin-top: 0;
   color: #f60;
 }
 
-h1.first {
-  margin-top: 0;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    position: relative;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  position: relative;
 }
 
 h1 .secnum {
@@ -1210,142 +1689,267 @@ h1 span.title {
   order: 2;
 }
 
+h1 {
+  font-size: 2.67em;
+  margin-bottom: 0;
+  line-height: 1em;
+}
+h2 {
+  font-size: 2em;
+}
+h3 {
+  font-size: 1.56em;
+}
+h4 {
+  font-size: 1.25em;
+}
+h5 {
+  font-size: 1.11em;
+}
+h6 {
+  font-size: 1em;
+}
 
-h1 { font-size: 2.67em; margin-top: 2em; margin-bottom: 0; line-height: 1em;}
-h2 { font-size: 2em; }
-h3 { font-size: 1.56em; }
-h4 { font-size: 1.25em; }
-h5 { font-size: 1.11em; }
-h6 { font-size: 1em; }
+pre code.hljs {
+  background: transparent;
+}
 
-h1:hover span.utils {
+emu-clause[id],
+emu-annex[id],
+emu-intro[id] {
+  scroll-margin-top: 2ex;
+}
+
+emu-intro h1,
+emu-clause h1,
+emu-annex h1 {
+  font-size: 2em;
+}
+emu-intro h2,
+emu-clause h2,
+emu-annex h2 {
+  font-size: 1.56em;
+}
+emu-intro h3,
+emu-clause h3,
+emu-annex h3 {
+  font-size: 1.25em;
+}
+emu-intro h4,
+emu-clause h4,
+emu-annex h4 {
+  font-size: 1.11em;
+}
+emu-intro h5,
+emu-clause h5,
+emu-annex h5 {
+  font-size: 1em;
+}
+emu-intro h6,
+emu-clause h6,
+emu-annex h6 {
+  font-size: 0.9em;
+}
+emu-intro emu-intro h1,
+emu-clause emu-clause h1,
+emu-annex emu-annex h1 {
+  font-size: 1.56em;
+}
+emu-intro emu-intro h2,
+emu-clause emu-clause h2,
+emu-annex emu-annex h2 {
+  font-size: 1.25em;
+}
+emu-intro emu-intro h3,
+emu-clause emu-clause h3,
+emu-annex emu-annex h3 {
+  font-size: 1.11em;
+}
+emu-intro emu-intro h4,
+emu-clause emu-clause h4,
+emu-annex emu-annex h4 {
+  font-size: 1em;
+}
+emu-intro emu-intro h5,
+emu-clause emu-clause h5,
+emu-annex emu-annex h5 {
+  font-size: 0.9em;
+}
+emu-intro emu-intro emu-intro h1,
+emu-clause emu-clause emu-clause h1,
+emu-annex emu-annex emu-annex h1 {
+  font-size: 1.25em;
+}
+emu-intro emu-intro emu-intro h2,
+emu-clause emu-clause emu-clause h2,
+emu-annex emu-annex emu-annex h2 {
+  font-size: 1.11em;
+}
+emu-intro emu-intro emu-intro h3,
+emu-clause emu-clause emu-clause h3,
+emu-annex emu-annex emu-annex h3 {
+  font-size: 1em;
+}
+emu-intro emu-intro emu-intro h4,
+emu-clause emu-clause emu-clause h4,
+emu-annex emu-annex emu-annex h4 {
+  font-size: 0.9em;
+}
+emu-intro emu-intro emu-intro emu-intro h1,
+emu-clause emu-clause emu-clause emu-clause h1,
+emu-annex emu-annex emu-annex emu-annex h1 {
+  font-size: 1.11em;
+}
+emu-intro emu-intro emu-intro emu-intro h2,
+emu-clause emu-clause emu-clause emu-clause h2,
+emu-annex emu-annex emu-annex emu-annex h2 {
+  font-size: 1em;
+}
+emu-intro emu-intro emu-intro emu-intro h3,
+emu-clause emu-clause emu-clause emu-clause h3,
+emu-annex emu-annex emu-annex emu-annex h3 {
+  font-size: 0.9em;
+}
+emu-intro emu-intro emu-intro emu-intro emu-intro h1,
+emu-clause emu-clause emu-clause emu-clause emu-clause h1,
+emu-annex emu-annex emu-annex emu-annex emu-annex h1 {
+  font-size: 1em;
+}
+emu-intro emu-intro emu-intro emu-intro emu-intro h2,
+emu-clause emu-clause emu-clause emu-clause emu-clause h2,
+emu-annex emu-annex emu-annex emu-annex emu-annex h2 {
+  font-size: 0.9em;
+}
+emu-intro emu-intro emu-intro emu-intro emu-intro emu-intro h1,
+emu-clause emu-clause emu-clause emu-clause emu-clause emu-clause h1,
+emu-annex emu-annex emu-annex emu-annex emu-annex emu-annex h1 {
+  font-size: 0.9em;
+}
+
+emu-clause,
+emu-intro,
+emu-annex {
   display: block;
 }
 
-span.utils {
-  font-size: 18px;
-  line-height: 18px;
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  font-weight: normal;
+/* these values are twice the font-size for the <h1> titles for clauses */
+emu-intro,
+emu-clause,
+emu-annex {
+  margin-top: 4em;
+}
+emu-intro emu-intro,
+emu-clause emu-clause,
+emu-annex emu-annex {
+  margin-top: 3.12em;
+}
+emu-intro emu-intro emu-intro,
+emu-clause emu-clause emu-clause,
+emu-annex emu-annex emu-annex {
+  margin-top: 2.5em;
+}
+emu-intro emu-intro emu-intro emu-intro,
+emu-clause emu-clause emu-clause emu-clause,
+emu-annex emu-annex emu-annex emu-annex {
+  margin-top: 2.22em;
+}
+emu-intro emu-intro emu-intro emu-intro emu-intro,
+emu-clause emu-clause emu-clause emu-clause emu-clause,
+emu-annex emu-annex emu-annex emu-annex emu-annex {
+  margin-top: 2em;
+}
+emu-intro emu-intro emu-intro emu-intro emu-intro emu-intro,
+emu-clause emu-clause emu-clause emu-clause emu-clause emu-clause,
+emu-annex emu-annex emu-annex emu-annex emu-annex emu-annex {
+  margin-top: 1.8em;
 }
 
-span.utils:before {
-    content: "⤷";
-    display: inline-block;
-    padding: 0 5px;
-}
-
-span.utils > * {
-  display: inline-block;
-  margin-right: 20px;
-}
-
-h1 span.utils span.anchor a,
-h2 span.utils span.anchor a,
-h3 span.utils span.anchor a,
-h4 span.utils span.anchor a,
-h5 span.utils span.anchor a,
-h6 span.utils span.anchor a {
-  text-decoration: none;
-  font-variant: small-caps;
-}
-
-h1 span.utils span.anchor a:hover,
-h2 span.utils span.anchor a:hover,
-h3 span.utils span.anchor a:hover,
-h4 span.utils span.anchor a:hover,
-h5 span.utils span.anchor a:hover,
-h6 span.utils span.anchor a:hover {
-  color: #333;
-}
-
-emu-intro h1, emu-clause h1, emu-annex h1 { font-size: 2em; }
-emu-intro h2, emu-clause h2, emu-annex h2 { font-size: 1.56em; }
-emu-intro h3, emu-clause h3, emu-annex h3 { font-size: 1.25em; }
-emu-intro h4, emu-clause h4, emu-annex h4 { font-size: 1.11em; }
-emu-intro h5, emu-clause h5, emu-annex h5 { font-size: 1em; }
-emu-intro h6, emu-clause h6, emu-annex h6 { font-size: 0.9em; }
-emu-intro emu-intro h1, emu-clause emu-clause h1, emu-annex emu-annex h1 { font-size: 1.56em; }
-emu-intro emu-intro h2, emu-clause emu-clause h2, emu-annex emu-annex h2 { font-size: 1.25em; }
-emu-intro emu-intro h3, emu-clause emu-clause h3, emu-annex emu-annex h3 { font-size: 1.11em; }
-emu-intro emu-intro h4, emu-clause emu-clause h4, emu-annex emu-annex h4 { font-size: 1em; }
-emu-intro emu-intro h5, emu-clause emu-clause h5, emu-annex emu-annex h5 { font-size: 0.9em; }
-emu-intro emu-intro emu-intro h1, emu-clause emu-clause emu-clause h1, emu-annex emu-annex emu-annex h1 { font-size: 1.25em; }
-emu-intro emu-intro emu-intro h2, emu-clause emu-clause emu-clause h2, emu-annex emu-annex emu-annex h2 { font-size: 1.11em; }
-emu-intro emu-intro emu-intro h3, emu-clause emu-clause emu-clause h3, emu-annex emu-annex emu-annex h3 { font-size: 1em; }
-emu-intro emu-intro emu-intro h4, emu-clause emu-clause emu-clause h4, emu-annex emu-annex emu-annex h4 { font-size: 0.9em; }
-emu-intro emu-intro emu-intro emu-intro h1, emu-clause emu-clause emu-clause emu-clause h1, emu-annex emu-annex emu-annex emu-annex h1 { font-size: 1.11em; }
-emu-intro emu-intro emu-intro emu-intro h2, emu-clause emu-clause emu-clause emu-clause h2, emu-annex emu-annex emu-annex emu-annex h2 { font-size: 1em; }
-emu-intro emu-intro emu-intro emu-intro h3, emu-clause emu-clause emu-clause emu-clause h3, emu-annex emu-annex emu-annex emu-annex h3 { font-size: 0.9em; }
-emu-intro emu-intro emu-intro emu-intro emu-intro h1, emu-clause emu-clause emu-clause emu-clause emu-clause h1, emu-annex emu-annex emu-annex emu-annex emu-annex h1 { font-size: 1em; }
-emu-intro emu-intro emu-intro emu-intro emu-intro h2, emu-clause emu-clause emu-clause emu-clause emu-clause h2, emu-annex emu-annex emu-annex emu-annex emu-annex h2 { font-size: 0.9em; }
-emu-intro emu-intro emu-intro emu-intro emu-intro emu-intro h1, emu-clause emu-clause emu-clause emu-clause emu-clause emu-clause h1, emu-annex emu-annex emu-annex emu-annex emu-annex emu-annex h1 { font-size: 0.9em }
-
-emu-clause, emu-intro, emu-annex {
-    display: block;
+#spec-container > emu-intro:first-of-type,
+#spec-container > emu-clause:first-of-type,
+#spec-container > emu-annex:first-of-type {
+  margin-top: 0;
 }
 
 /* Figures and tables */
-figure { display: block; margin: 1em 0 3em 0; }
-figure object { display: block; margin: 0 auto; }
-figure table.real-table { margin: 0 auto; }
+figure {
+  display: block;
+  margin: 1em 0 3em 0;
+}
+figure object {
+  display: block;
+  margin: 0 auto;
+}
+figure table.real-table {
+  margin: 0 auto;
+}
 figure figcaption {
-    display: block;
-    color: #555555;
-    font-weight: bold;
-    text-align: center;
+  display: block;
+  color: #555555;
+  font-weight: bold;
+  text-align: center;
 }
 
 emu-table table {
   margin: 0 auto;
 }
 
-emu-table table, table.real-table {
-    border-collapse: collapse;
+emu-table table,
+table.real-table {
+  border-collapse: collapse;
 }
 
-emu-table td, emu-table th, table.real-table td, table.real-table th {
-    border: 1px solid black;
-    padding: 0.4em;
-    vertical-align: baseline;
+emu-table td,
+emu-table th,
+table.real-table td,
+table.real-table th {
+  border: 1px solid black;
+  padding: 0.4em;
+  vertical-align: baseline;
 }
-emu-table th, emu-table thead td, table.real-table th {
-    background-color: #eeeeee;
+emu-table th,
+emu-table thead td,
+table.real-table th {
+  background-color: #eeeeee;
+}
+
+emu-table td {
+  background: #fff;
 }
 
 /* Note: the left content edges of table.lightweight-table >tbody >tr >td
    and div.display line up. */
 table.lightweight-table {
-    border-collapse: collapse;
-    margin: 0 0 0 1.5em;
+  border-collapse: collapse;
+  margin: 0 0 0 1.5em;
 }
-table.lightweight-table td, table.lightweight-table th {
-    border: none;
-    padding: 0 0.5em;
-    vertical-align: baseline;
+table.lightweight-table td,
+table.lightweight-table th {
+  border: none;
+  padding: 0 0.5em;
+  vertical-align: baseline;
 }
 
 /* diff styles */
 ins {
-    background-color: #e0f8e0;
-    text-decoration: none;
-    border-bottom: 1px solid #396;
+  background-color: #e0f8e0;
+  text-decoration: none;
+  border-bottom: 1px solid #396;
 }
 
 del {
-    background-color: #fee;
+  background-color: #fee;
 }
 
-ins.block, del.block,
-emu-production > ins, emu-production > del,
-emu-grammar > ins, emu-grammar > del {
+ins.block,
+del.block,
+emu-production > ins,
+emu-production > del,
+emu-grammar > ins,
+emu-grammar > del {
   display: block;
 }
-emu-rhs > ins, emu-rhs > del { 
+emu-rhs > ins,
+emu-rhs > del {
   display: inline;
 }
 
@@ -1382,7 +1986,7 @@ tr.del > td {
   -khtml-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none;;
+  user-select: none;
 
   cursor: pointer;
 }
@@ -1390,7 +1994,8 @@ tr.del > td {
 #menu {
   display: flex;
   flex-direction: column;
-  width: 33%; height: 100vh;
+  width: 33%;
+  height: 100vh;
   max-width: 500px;
   box-sizing: border-box;
   background-color: #ddd;
@@ -1398,7 +2003,8 @@ tr.del > td {
   transition: opacity 0.1s linear;
   padding: 0 5px;
   position: fixed;
-  left: 0; top: 0;
+  left: 0;
+  top: 0;
   border-right: 2px solid #bbb;
 
   z-index: 2;
@@ -1459,7 +2065,8 @@ tr.del > td {
   padding: 0;
 }
 
-#menu-toc > ol , #menu-toc > ol ol {
+#menu-toc > ol,
+#menu-toc > ol ol {
   list-style-type: none;
   margin: 0;
   padding: 0;
@@ -1489,7 +2096,7 @@ tr.del > td {
   -khtml-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none;;
+  user-select: none;
 
   cursor: pointer;
 }
@@ -1520,7 +2127,7 @@ tr.del > td {
   */
 }
 
-#menu-toc li.revealed-leaf> a {
+#menu-toc li.revealed-leaf > a {
   color: #206ca7;
   /*
   background-color: #222;
@@ -1556,6 +2163,34 @@ tr.del > td {
   font-size: 0.8em;
 }
 
+.menu-pane-header emu-opt,
+.menu-pane-header emu-t,
+.menu-pane-header emu-nt {
+  margin-right: 0px;
+  display: inline;
+  color: inherit;
+}
+
+.menu-pane-header emu-rhs {
+  display: inline;
+  padding-left: 0px;
+  text-indent: 0px;
+}
+
+.menu-pane-header emu-geq {
+  margin-left: 0px;
+}
+
+a.menu-pane-header-production {
+  color: inherit;
+}
+
+.menu-pane-header-production {
+  text-transform: none;
+  letter-spacing: 1.5px;
+  padding-left: 0.5em;
+}
+
 #menu-toc {
   display: flex;
   flex-direction: column;
@@ -1574,10 +2209,10 @@ tr.del > td {
   flex-grow: 0;
   flex-shrink: 0;
   width: 100%;
-  
+
   display: flex;
   flex-direction: column;
-  
+
   max-height: 300px;
 }
 
@@ -1602,43 +2237,42 @@ tr.del > td {
 }
 
 li.menu-search-result-clause:before {
-    content: 'clause';
-    width: 40px;
-    display: inline-block;
-    text-align: right;
-    padding-right: 1ex;
-    color: #666;
-    font-size: 75%;
+  content: 'clause';
+  width: 40px;
+  display: inline-block;
+  text-align: right;
+  padding-right: 1ex;
+  color: #666;
+  font-size: 75%;
 }
 li.menu-search-result-op:before {
-    content: 'op';
-    width: 40px;
-    display: inline-block;
-    text-align: right;
-    padding-right: 1ex;
-    color: #666;
-    font-size: 75%;
+  content: 'op';
+  width: 40px;
+  display: inline-block;
+  text-align: right;
+  padding-right: 1ex;
+  color: #666;
+  font-size: 75%;
 }
 
 li.menu-search-result-prod:before {
-    content: 'prod';
-    width: 40px;
-    display: inline-block;
-    text-align: right;
-    padding-right: 1ex;
-    color: #666;
-    font-size: 75%
+  content: 'prod';
+  width: 40px;
+  display: inline-block;
+  text-align: right;
+  padding-right: 1ex;
+  color: #666;
+  font-size: 75%;
 }
 
-
 li.menu-search-result-term:before {
-    content: 'term';
-    width: 40px;
-    display: inline-block;
-    text-align: right;
-    padding-right: 1ex;
-    color: #666;
-    font-size: 75%
+  content: 'term';
+  width: 40px;
+  display: inline-block;
+  text-align: right;
+  padding-right: 1ex;
+  color: #666;
+  font-size: 75%;
 }
 
 #menu-search-results ul {
@@ -1651,7 +2285,6 @@ li.menu-search-result-term:before {
   text-overflow: ellipsis;
 }
 
-
 #menu-trace-list {
   counter-reset: item;
   margin: 0 0 0 20px;
@@ -1663,19 +2296,19 @@ li.menu-search-result-term:before {
 }
 
 #menu-trace-list li .secnum:after {
-  content: " ";
+  content: ' ';
 }
 #menu-trace-list li:before {
-    content: counter(item) " ";
-    background-color: #222;
-    counter-increment: item;
-    color: #999;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-    display: inline-block;
-    text-align: center;
-    margin: 2px 4px 2px 0;
+  content: counter(item) ' ';
+  background-color: #222;
+  counter-increment: item;
+  color: #999;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  display: inline-block;
+  text-align: center;
+  margin: 2px 4px 2px 0;
 }
 
 @media (max-width: 1000px) {
@@ -1717,24 +2350,29 @@ li.menu-search-result-term:before {
   }
 
   h1 .secnum:empty {
-    margin: 0; padding: 0;
+    margin: 0;
+    padding: 0;
   }
 }
 
-
 /* Toolbox */
-.toolbox {
-	position: absolute;
-	background: #ddd;
-	border: 1px solid #aaa;
+.toolbox-container {
+  position: absolute;
   display: none;
+  padding-bottom: 7px;
+}
+
+.toolbox-container.active {
+  display: inline-block;
+}
+
+.toolbox {
+  position: relative;
+  background: #ddd;
+  border: 1px solid #aaa;
   color: #eee;
   padding: 5px;
   border-radius: 3px;
-}
-
-.toolbox.active {
-  display: inline-block;
 }
 
 .toolbox a {
@@ -1746,28 +2384,29 @@ li.menu-search-result-term:before {
   text-decoration: underline;
 }
 
-.toolbox:after, .toolbox:before {
-	top: 100%;
-	left: 15px;
-	border: solid transparent;
-	content: " ";
-	height: 0;
-	width: 0;
-	position: absolute;
-	pointer-events: none;
+.toolbox:after,
+.toolbox:before {
+  top: 100%;
+  left: 15px;
+  border: solid transparent;
+  content: ' ';
+  height: 0;
+  width: 0;
+  position: absolute;
+  pointer-events: none;
 }
 
 .toolbox:after {
-	border-color: rgba(0, 0, 0, 0);
-	border-top-color: #ddd;
-	border-width: 10px;
-	margin-left: -10px;
+  border-color: rgba(0, 0, 0, 0);
+  border-top-color: #ddd;
+  border-width: 10px;
+  margin-left: -10px;
 }
 .toolbox:before {
-	border-color: rgba(204, 204, 204, 0);
-	border-top-color: #aaa;
-	border-width: 12px;
-	margin-left: -12px;
+  border-color: rgba(204, 204, 204, 0);
+  border-top-color: #aaa;
+  border-width: 12px;
+  margin-left: -12px;
 }
 
 #references-pane-container {
@@ -1815,20 +2454,191 @@ li.menu-search-result-term:before {
 
 @media print {
   #menu-toggle {
-    display: none; 
+    display: none;
   }
 }
-</style></head><body><div id="menu-toggle">☰</div><div id="menu-spacer"></div><div id="menu"><div id="menu-search"><input type="text" id="menu-search-box" placeholder="Search..."><div id="menu-search-results" class="inactive"></div></div><div id="menu-pins"><div class="menu-pane-header">Pins</div><ul id="menu-pins-list"></ul></div><div class="menu-pane-header">Table of Contents</div><div id="menu-toc"><ol class="toc"><li><span class="item-toggle-none"></span><a href="#sec-demo-clause" title="This is an emu-clause"><span class="secnum">1</span> This is an emu-clause</a></li><li><span class="item-toggle-none"></span><a href="#sec-copyright-and-software-license" title="Copyright &amp; Software License"><span class="secnum">A</span> Copyright &amp; Software License</a></li></ol></div></div><div id="spec-container"><h1 class="version first">Stage -1 Draft / April 1, 2022</h1><h1 class="title">Proposal Title Goes Here</h1>
 
-<emu-clause id="sec-demo-clause">
-  <h1><span class="secnum">1</span> This is an emu-clause</h1>
-  <p>This is an algorithm:</p>
-  <emu-alg><ol><li>Let <var>proposal</var> be <emu-val>undefined</emu-val>.</li><li>If IsAccepted(<var>proposal</var>),<ol><li>Let <var>stage</var> be <emu-val>0</emu-val>.</li></ol></li><li>Else,<ol><li>Let <var>stage</var> be <emu-val>-1</emu-val>.</li></ol></li><li>Return ?&nbsp;<emu-xref aoid="ToString" id="_ref_0"><a href="https://tc39.es/ecma262/#sec-tostring">ToString</a></emu-xref>(<var>proposal</var>).</li></ol></emu-alg>
+[normative-optional],
+[legacy] {
+  border-left: 5px solid #ff6600;
+  padding: 0.5em;
+  display: block;
+  background: #ffeedd;
+}
+
+.clause-attributes-tag {
+  text-transform: uppercase;
+  color: #884400;
+}
+
+.clause-attributes-tag a {
+  color: #884400;
+}
+
+/* Shortcuts help dialog */
+
+#shortcuts-help {
+  position: fixed;
+  left: 5%;
+  margin: 0 auto;
+  right: 5%;
+  z-index: 10;
+  top: 10%;
+  top: calc(5vw + 5vh);
+  padding: 30px 90px;
+  max-width: 500px;
+  outline: solid 10000px rgba(255, 255, 255, 0.6);
+  border-radius: 5px;
+  border-width: 1px 1px 0 1px;
+  background-color: #ddd;
+  display: none;
+}
+
+#shortcuts-help.active {
+  display: block;
+}
+
+#shortcuts-help ul {
+  padding: 0;
+}
+
+#shortcuts-help li {
+  display: flex;
+  justify-content: space-between;
+}
+
+#shortcuts-help code {
+  padding: 3px 10px;
+  border-radius: 3px;
+  border-width: 1px 1px 0 1px;
+  border-color: #bbb;
+  background-color: #eee;
+  box-shadow: inset 0 -1px 0 #ccc;
+}
+</style></head><body><div id="shortcuts-help">
+<ul>
+  <li><span>Toggle shortcuts help</span><code>?</code></li>
+  <li><span>Toggle "can call user code" annotations</span><code>u</code></li>
+
+  <li><span>Jump to search box</span><code>/</code></li>
+</ul></div><div id="menu-toggle"><svg xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%; stroke:currentColor" viewBox="0 0 120 120">
+      <title>Menu</title>
+      <path stroke-width="10" stroke-linecap="round" d="M30,60 h60  M30,30 m0,5 h60  M30,90 m0,-5 h60"></path>
+    </svg></div><div id="menu-spacer"></div><div id="menu"><div id="menu-search"><input type="text" id="menu-search-box" placeholder="Search..."><div id="menu-search-results" class="inactive"></div></div><div id="menu-pins"><div class="menu-pane-header">Pins</div><ul id="menu-pins-list"></ul></div><div class="menu-pane-header">Table of Contents</div><div id="menu-toc"><ol class="toc"><li><span class="item-toggle-none"></span><a href="#sec-scope" title="Scope"><span class="secnum">1</span> Scope</a></li><li><span class="item-toggle">◢</span><a href="#sec-properties-of-the-string-constructor" title="Properties of the String Constructor "><span class="secnum">2</span> Properties of the String Constructor <emu-xref href="#sec-properties-of-the-string-constructor"></emu-xref></a><ol class="toc"><li><span class="item-toggle">◢</span><a href="#sec-string.dedent" title="String.dedent ( templateOrFn, ...substitutions )"><span class="secnum">2.1</span> String.dedent ( <var>templateOrFn</var>, ...<var>substitutions</var> )</a><ol class="toc"><li><span class="item-toggle-none"></span><a href="#sec-dedent-template-strings-array" title="DedentTemplateStringsArray ( template )"><span class="secnum">2.1.1</span> DedentTemplateStringsArray ( <var>template</var> )</a></li><li><span class="item-toggle-none"></span><a href="#sec-dedent-strings-array" title="DedentStringsArray ( template )"><span class="secnum">2.1.2</span> DedentStringsArray ( <var>template</var> )</a></li><li><span class="item-toggle-none"></span><a href="#sec-leading-white-space-substring" title="LeadingWhiteSpaceSubstring ( str )"><span class="secnum">2.1.3</span> LeadingWhiteSpaceSubstring ( <var>str</var> )</a></li><li><span class="item-toggle-none"></span><a href="#sec-is-all-white-space" title="IsAllWhiteSpace ( str )"><span class="secnum">2.1.4</span> IsAllWhiteSpace ( <var>str</var> )</a></li><li><span class="item-toggle-none"></span><a href="#sec-longest-leading-matching-substring" title="LongestLeadingMatchingSubstring ( a, b )"><span class="secnum">2.1.5</span> LongestLeadingMatchingSubstring ( <var>a</var>, <var>b</var> )</a></li></ol></li><li><span class="item-toggle-none"></span><a href="#sec-cook-template-strings-array" title="CookTemplateStringsArray ( template, substitutions )"><span class="secnum">2.2</span> CookTemplateStringsArray ( <var>template</var>, <var>substitutions</var> )</a></li></ol></li><li><span class="item-toggle-none"></span><a href="#sec-copyright-and-software-license" title="Copyright &amp; Software License"><span class="secnum">A</span> Copyright &amp; Software License</a></li></ol></div></div><div id="spec-container"><h1 class="version">Stage 1 Draft / May 22, 2022</h1><h1 class="title">String Dedent</h1>
+
+<emu-clause id="sec-scope">
+  <h1><span class="secnum">1</span> Scope</h1>
+  <p>
+    This is the spec text of the <a href="https://github.com/tc39/proposal-string-dedent/">String Dedent proposal</a> in ECMAScript.
+    String dedenting removes leading indentation from each line of a multiline string.
+  </p>
+</emu-clause>
+
+<emu-clause id="sec-properties-of-the-string-constructor">
+  <h1><span class="secnum">2</span> Properties of the String Constructor <emu-xref href="#sec-properties-of-the-string-constructor" id="_ref_0"><a href="#sec-properties-of-the-string-constructor">2</a></emu-xref></h1>
+
+  <ins class="block">
+
+  <emu-clause id="sec-string.dedent">
+    <h1><span class="secnum">2.1</span> String.dedent ( <var>templateOrFn</var>, ...<var>substitutions</var> )</h1>
+    <emu-note><span class="note">Note 1</span><div class="note-contents">
+      <p>The <code>String.dedent</code> function may be called with either a template array and a variable number of substitutions, or it may be called with a function which itself takes a template array and a variable number of substitutions.</p>
+      <p>When called with a template and a variable number of substitutions, a string is returned which has common leading indentation removed from all lines with non-whitespace.</p>
+      <p>When called with a function, a closure is returned which wraps the function. When the closure is called with a template and variable number of substitutions, the common leading indentation of the temlpate is removed and the result of calling the function with this new dedented template and substitutions is returned.</p>
+      <p>Common leading indentation is defined as the longest sequence of whitespace characters that match exactly on every line that contains non-whitespace. Empty lines and lines which contain only whitespace do not affect common leading indentation.</p>
+      <p>When removing the common leading indentation, lines which contain only whitespace will have all whitespace removed.</p>
+    </div></emu-note>
+    <emu-alg><ol><li>If Type(<var>templateOrFn</var>) is Object and IsCallable(<var>templateOrFn</var>) is <emu-val>true</emu-val>, then<ol><li>Let <var>tag</var> be <var>templateOrFn</var>.</li><li>Let <var>closure</var> be a new Abstract Closure with parameters (<var>template</var>, ...<var>substitutions</var>) that captures <var>tag</var> and performs the following steps when called:<ol><li>Let <var>R</var> be the <emu-val>this</emu-val> value.</li><li>Let <var>dedented</var> be ?&nbsp;<emu-xref aoid="DedentTemplateStringsArray" id="_ref_2"><a href="#sec-dedent-template-strings-array">DedentTemplateStringsArray</a></emu-xref>(<var>template</var>).</li><li>Let <var>args</var> be the list-concatenation of « <var>dedented</var> » and <var>substitutions</var>.</li><li>Return ?&nbsp;Call(<var>tag</var>, <var>R</var>, <var>args</var>).</li></ol></li></ol></li><li>If ?&nbsp;IsArray(<var>templateOrFn</var>) is <emu-val>true</emu-val>, then<ol><li>Let <var>dedented</var> be ?&nbsp;<emu-xref aoid="DedentTemplateStringsArray" id="_ref_3"><a href="#sec-dedent-template-strings-array">DedentTemplateStringsArray</a></emu-xref>(<var>template</var>).</li><li>Return ?&nbsp;<emu-xref aoid="CookTemplateStringsArray" id="_ref_4"><a href="#sec-cook-template-strings-array">CookTemplateStringsArray</a></emu-xref>(<var>dedented</var>, <var>substitutions</var>).</li></ol></li><li>Throw a <emu-val>TypeError</emu-val> exception.</li></ol></emu-alg>
+    <emu-note><span class="note">Note 2</span><div class="note-contents">
+      <p>The <code>dedent</code> function is intended for use as a tag function of a Tagged Template (<emu-xref href="#sec-tagged-templates"></emu-xref>). When called as such, the first argument will be a well formed template object and the rest parameter will contain the substitution values.</p>
+    </div></emu-note>
+  
+
+  <emu-clause id="sec-dedent-template-strings-array" type="abstract operation" aoid="DedentTemplateStringsArray">
+    <h1><span class="secnum">2.1.1</span> DedentTemplateStringsArray ( <var>template</var> )</h1>
+    <p>The abstract operation DedentTemplateStringsArray takes argument <var>template</var> (an ECMAScript language value). It performs the following steps when called:</p>
+    <emu-alg><ol><li>For each element <var>e</var> of the GlobalDedentRegistry List, do<ol><li>If SameValue(<var>e</var>.[[Key]], <var>template</var>) is <emu-val>true</emu-val>, return <var>e</var>.[[Value]].</li></ol></li><li>Assert: GlobalDedentRegistry does not currently contain an entry for <var>template</var>.</li><li>Let <var>dedentedCooked</var> be ?&nbsp;<emu-xref aoid="DedentStringsArray" id="_ref_5"><a href="#sec-dedent-strings-array">DedentStringsArray</a></emu-xref>(<var>template</var>).</li><li>Let <var>dedentedRaw</var> be ?&nbsp;<emu-xref aoid="DedentStringsArray" id="_ref_6"><a href="#sec-dedent-strings-array">DedentStringsArray</a></emu-xref>(? Get(<var>template</var>, <emu-val>"raw"</emu-val>)).</li><li>Let <var>cookedArr</var> be CreateArrayFromList(<var>dedentedCooked</var>).</li><li>Let <var>rawArr</var> be CreateArrayFromList(<var>dedentedRaw</var>).</li><li>Perform !&nbsp;SetIntegrityLevel(<var>rawArr</var>, <emu-const>frozen</emu-const>).</li><li>Perform !&nbsp;DefinePropertyOrThrow(<var>cookedArr</var>, <emu-val>"raw"</emu-val>, PropertyDescriptor { [[Value]]: <var>rawArr</var>, [[Writable]]: <emu-val>false</emu-val>, [[Enumerable]]: <emu-val>false</emu-val>, [[Configurable]]: <emu-val>false</emu-val> }).</li><li>Perform !&nbsp;SetIntegrityLevel(<var>cookedArr</var>, <emu-const>frozen</emu-const>).</li><li>Append the Record { [[Key]]: <var>template</var>, [[Value]]: <var>cookedArr</var> } to the GlobalDedentRegistry List.</li><li>Return <var>cookedArr</var>.</li></ol></emu-alg>
+    <p>The GlobalDedentRegistry is a List that is globally available. It is shared by all realms. Prior to the evaluation of any ECMAScript code it is initialized as a new empty List. Elements of the GlobalDedentRegistry are Records with the structure defined in <emu-xref href="#table-globaldedentregistry-record-fields" id="_ref_1"><a href="#table-globaldedentregistry-record-fields">Table 1</a></emu-xref>.</p>
+    <emu-table id="table-globaldedentregistry-record-fields" caption="GlobalDedentRegistry Record Fields"><figure><figcaption>Table 1: GlobalDedentRegistry Record Fields</figcaption>
+      <table>
+        <tbody><tr>
+          <th>
+            Field Name
+          </th>
+          <th>
+            Value
+          </th>
+          <th>
+            Usage
+          </th>
+        </tr>
+        <tr>
+          <td>
+            [[Key]]
+          </td>
+          <td>
+            an ECMAScript value
+          </td>
+          <td>
+            A template strings array key used to ensure <code>String.dedent</code>'s return value maintains a consistent object identity.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            [[Value]]
+          </td>
+          <td>
+            an ECMAScript value
+          </td>
+          <td>
+            A template strings array that has been dedented.
+          </td>
+        </tr>
+      </tbody></table>
+    </figure></emu-table>
+  </emu-clause>
+
+  <emu-clause id="sec-dedent-strings-array" type="abstract operation" aoid="DedentStringsArray">
+    <h1><span class="secnum">2.1.2</span> DedentStringsArray ( <var>template</var> )</h1>
+    <p>The abstract operation DedentStringsArray takes argument <var>template</var> (an ECMAScript language value). It performs the following steps when called:</p>
+    <emu-alg><ol><li>Let <var>index</var> be 0.</li><li>Let <var>blocks</var> be a new empty List.</li><li>Let <var>t</var> be ?&nbsp;ToObject(<var>template</var>).</li><li>Let <var>len</var> be ?&nbsp;LengthOfArrayLike(<var>t</var>).</li><li>Repeat, while <var>index</var> &lt; <var>len</var>,<ol><li>Let <var>str</var> be ?&nbsp;Get(<var>t</var>, !&nbsp;ToString(𝔽(<var>index</var>))).</li><li>If Type(<var>str</var>) is Undefined, then<ol><li>Note: After the template literal revision, cooked template strings arrays can contain <emu-val>undefined</emu-val> when an illegal escape sequence is found.</li><li>Append <emu-const>empty</emu-const> to <var>blocks</var>.</li></ol></li><li>Else if Type(<var>str</var>) is not String, then<ol><li>Let <var>lines</var> be a new empty List.</li><li>Let <var>start</var> be 0.</li><li>Let <var>i</var> be 0.</li><li>For each code unit <var>C</var> that is an element of <var>str</var>, do<ol><li>Let <var>n</var> be 1.</li><li>If <var>C</var> is <emu-val>"\r"</emu-val>, then<ol><li>If !&nbsp;Get(<var>str</var>, !&nbsp;ToString(𝔽(<var>i</var> + 1)) is <emu-val>"\n"</emu-val>, then<ol><li>Set <var>n</var> to 2.</li></ol></li></ol></li><li>If <var>C</var> is <emu-val>"\n"</emu-val> or <var>C</var> is <emu-val>"\r"</emu-val> or <var>C</var> is <emu-val>"\u2028"</emu-val> or <var>C</var> is <emu-val>"\u2029"</emu-val>, then<ol><li>Let <var>substr</var> be the substring of <var>str</var> from <var>start</var> to <var>i</var>.</li><li>Let <var>newline</var> be the substring of <var>str</var> from <var>i</var> to <var>i</var> + <var>n</var>.</li><li>Append the Record { [[String]]: <var>substr</var>, [[Newline]]: <var>newline</var> } to <var>lines</var>.</li><li>Set <var>start</var> to <var>i</var> + <var>n</var>.</li></ol></li><li>Set <var>i</var> to <var>i</var> + <var>n</var>.</li></ol></li><li>Let <var>strLen</var> be the length of <var>str</var>.</li><li>Let <var>tail</var> be the substring of <var>str</var> from <var>start</var> to <var>strLen</var>.</li><li>Append the Record { [[String]]: <var>tail</var>, [[Newline]]: <emu-val>""</emu-val> } to <var>lines</var>.</li><li>Append <var>lines</var> to <var>blocks</var>.</li></ol></li><li>Else, throw a <emu-val>TypeError</emu-val> exception.</li><li>Set <var>index</var> to <var>index</var> + 1.</li></ol></li><li>Let <var>common</var> be <emu-const>empty</emu-const>.</li><li>Set <var>index</var> to 0.</li><li>For each element <var>lines</var> of <var>blocks</var>, do<ol><li>If <var>lines</var> is not <emu-const>empty</emu-const>, then<ol><li>If <var>index</var> is 0, let <var>firstBlock</var> be <emu-val>true</emu-val>; else let <var>firstBlock</var> be <emu-val>false</emu-val>.</li><li>If <var>index</var> + 1 is <var>len</var>, let <var>lastBlock</var> be <emu-val>true</emu-val>; else let <var>lastBlock</var> be <emu-val>false</emu-val>.</li><li>Note: <var>firstBlock</var> and <var>lastBlock</var> can both be <emu-val>true</emu-val> if the <var>template</var> has length 1.</li><li>Let <var>lineCount</var> be the length of <var>lines</var>.</li><li>Let <var>i</var> be 0.</li><li>For each Record { [[String]], [[Newline]] } <var>line</var> of <var>lines</var>, do<ol><li>If <var>firstBlock</var> is <emu-val>true</emu-val> and <var>i</var> is 0, then<ol><li>If <var>line</var>.[[Newline]] is <emu-val>""</emu-val>, then<ol><li>Note: The opening line is required to contain a trailing newline. If it does not, either the opening and closing line are the same line or the opening line contains a substitution.</li><li>Throw a <emu-val>TypeError</emu-val> exception.</li></ol></li><li>If the length of <var>line</var>.[[String]] is not 0, then<ol><li>Note: The opening line must contain no code units besides the trailing newline.</li><li>Throw a <emu-val>TypeError</emu-val> exception.</li></ol></li><li>Set <var>line</var>.[[Newline]] to <emu-val>""</emu-val>.</li><li>Note: Setting <var>line</var>.[[Newline]] removes the opening line from the output.</li></ol></li><li>If <var>lastBlock</var> is <emu-val>true</emu-val> and <var>i</var> + 1 is <var>lineCount</var>, then<ol><li>If the <var>lineCount</var> is 1, then<ol><li>Note: The closing line is required to contain a preceding newline, and checking that there are at least 2 lines in <var>lines</var> ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.</li><li>Throw a <emu-val>TypeError</emu-val> exception.</li></ol></li><li>If <emu-xref aoid="IsAllWhiteSpace" id="_ref_7"><a href="#sec-is-all-white-space">IsAllWhiteSpace</a></emu-xref>(<var>line</var>.[[String]]) is <emu-val>false</emu-val>, then<ol><li>Note: The closing line may only contain whitespace.</li><li>Throw a <emu-val>TypeError</emu-val> exception.</li></ol></li><li>Set <var>line</var>.[[Newline]] to <emu-val>""</emu-val>.</li><li>Set <var>line</var>.[[String]] to <emu-val>""</emu-val>.</li><li>Note: Setting <var>line</var>.[[Newline]] and <var>line</var>.[[String]] removes the closing line from the output.</li></ol></li><li>If <var>firstBlock</var> is <emu-val>false</emu-val> and <var>i</var> is 0, then let <var>lineContinuesAfterSubstitution</var> be <emu-val>true</emu-val>; else let <var>lineContinuesAfterSubstitution</var> be <emu-val>false</emu-val>.</li><li>Note: The text that continues on the same line directly after a substitution cannot be the start of a line.</li><li>If <var>lineContinuesAfterSubstitution</var> is <emu-val>false</emu-val>, then<ol><li>If <var>lastBlock</var> is <emu-val>false</emu-val> and <var>line</var>.[[Newline]] is <emu-val>""</emu-val>, then let <var>lineEndsWithSubstitution</var> be <emu-val>true</emu-val>; else let <var>lineEndsWithSubstitution</var> be <emu-val>false</emu-val>.</li><li>If <var>lineEndsWithSubstitution</var> is <emu-val>false</emu-val> and <emu-xref aoid="IsAllWhiteSpace" id="_ref_8"><a href="#sec-is-all-white-space">IsAllWhiteSpace</a></emu-xref>(<var>line</var>.[[String]]) is <emu-val>true</emu-val>, then<ol><li>Note: We consider empty lines to contain only whitespace.</li><li>Set <var>line</var>.[[String]] to <emu-val>""</emu-val>.</li><li>Note: Lines which contain only whitespace are emptied in the output. Their trailing newline is not removed, so the line is maintained.</li></ol></li><li>Else,<ol><li>Note: Lines which contain substitutions are considered when finding the common indentation.</li><li>Let <var>leading</var> be <emu-xref aoid="LeadingWhiteSpaceSubstring" id="_ref_9"><a href="#sec-leading-white-space-substring">LeadingWhiteSpaceSubstring</a></emu-xref>(<var>line</var>.[[String]]).</li><li>If <var>common</var> is <emu-const>empty</emu-const>, then<ol><li>Set <var>common</var> to <var>leading</var>.</li></ol></li><li>Else,<ol><li>Set <var>common</var> to <emu-xref aoid="LongestLeadingMatchingSubstring" id="_ref_10"><a href="#sec-longest-leading-matching-substring">LongestLeadingMatchingSubstring</a></emu-xref>(<var>common</var>, <var>leading</var>).</li></ol></li></ol></li></ol></li><li>Set <var>i</var> to <var>i</var> + 1.</li></ol></li></ol></li></ol></li><li>If <var>common</var> is <emu-const>empty</emu-const>, then let <var>count</var> be 0; else let <var>count</var> be the length of <var>common</var>.</li><li>Note: <var>common</var> can be <emu-const>empty</emu-const> if the cooked template contains only <emu-val>undefined</emu-val> values.</li><li>Let <var>dedented</var> be a new empty List.</li><li>For each element <var>lines</var> of <var>blocks</var>, do<ol><li>If <var>lines</var> is <emu-const>empty</emu-const>, then<ol><li>Append <emu-val>undefined</emu-val> to <var>dedented</var>.</li></ol></li><li>Else,<ol><li>Let <var>s</var> be <emu-val>""</emu-val>.</li><li>Let <var>index</var> be 0.</li><li>For each Record { [[String]], [[Newline]] } <var>line</var> of <var>lines</var>, do<ol><li>If <var>index</var> is 0, then let <var>c</var> be 0; else let <var>c</var> be <var>count</var>.</li><li>Note: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.</li><li>Let <var>strLen</var> be the length of <var>line</var>.[[String]].</li><li>Let <var>trimmed</var> be the substring of <var>line</var>.[[String]] from <var>c</var> to <var>strLen</var>.</li><li>Set <var>s</var> to the string-concatenation of <var>s</var>, <var>trimmed</var>, and <var>line</var>.[[Newline]].</li><li>Set <var>index</var> to <var>index</var> + 1.</li></ol></li><li>Append <var>s</var> to <var>dedented</var>.</li></ol></li></ol></li><li>Return <var>dedented</var>.</li></ol></emu-alg>
+  </emu-clause>
+
+  <emu-clause id="sec-leading-white-space-substring" type="abstract operation" aoid="LeadingWhiteSpaceSubstring">
+    <h1><span class="secnum">2.1.3</span> LeadingWhiteSpaceSubstring ( <var>str</var> )</h1>
+    <p>The abstract operation LeadingWhiteSpaceSubstring takes argument <var>str</var> (a String). It performs the following steps when called:</p>
+    <emu-alg><ol><li>Let <var>l</var> be the String value that is a copy of <var>S</var> with only leading white space.</li><li>Return <var>l</var>.</li></ol></emu-alg>
+    <p>The definition of white space is <emu-nt>WhiteSpace</emu-nt>. When determining whether a Unicode code point is in Unicode general category “Space_Separator” (“Zs”), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <emu-xref href="#sec-ecmascript-language-types-string-type"></emu-xref>.</p>
+  </emu-clause>
+
+  <emu-clause id="sec-is-all-white-space" type="abstract operation" aoid="IsAllWhiteSpace">
+    <h1><span class="secnum">2.1.4</span> IsAllWhiteSpace ( <var>str</var> )</h1>
+    <p>The abstract operation IsAllWhiteSpace takes argument <var>str</var> (a String). It performs the following steps when called:</p>
+    <emu-alg><ol><li>Let <var>len</var> be the length of <var>str</var>.</li><li>Let <var>leading</var> be <emu-xref aoid="LeadingWhiteSpaceSubstring" id="_ref_11"><a href="#sec-leading-white-space-substring">LeadingWhiteSpaceSubstring</a></emu-xref>(<var>str</var>).</li><li>Let <var>leadingLen</var> be the length of <var>leading</var>.</li><li>If <var>len</var> is <var>leadingLen</var>, return <emu-val>true</emu-val>.</li><li>Return <emu-val>false</emu-val>.</li></ol></emu-alg>
+  </emu-clause>
+
+  <emu-clause id="sec-longest-leading-matching-substring" type="abstract operation" aoid="LongestLeadingMatchingSubstring">
+    <h1><span class="secnum">2.1.5</span> LongestLeadingMatchingSubstring ( <var>a</var>, <var>b</var> )</h1>
+    <p>The abstract operation LongestLeadingMatchingSubstring takes arguments <var>a</var> (a String) and <var>b</var> (a String). It performs the following steps when called:</p>
+    <emu-alg><ol><li>Let <var>aLen</var> be the length of <var>a</var>.</li><li>Let <var>bLen</var> be the length of <var>b</var>.</li><li>If <var>aLen</var> is less than <var>bLen</var>, let <var>len</var> be <var>aLen</var>; else let <var>len</var> be <var>bLen</var>.</li><li>For each integer <var>i</var> starting with 0 such that <var>i</var> ≤ <var>len</var>, in ascending order, do<ol><li>Let <var>aChar</var> be the substring of <var>a</var> from <var>i</var> to <var>i</var> + 1.</li><li>Let <var>bChar</var> be the substring of <var>b</var> from <var>i</var> to <var>i</var> + 1.</li><li>If <var>aChar</var> is not <var>bChar</var>, then<ol><li>Return the substring of <var>a</var> from 0 to <var>i</var>.</li></ol></li></ol></li><li>Return the substring of <var>a</var> from 0 to <var>len</var>.</li></ol></emu-alg>
+  </emu-clause>
+
+  </emu-clause></ins>
+
+  <emu-clause id="sec-cook-template-strings-array" type="abstract operation" aoid="CookTemplateStringsArray">
+    <h1><span class="secnum">2.2</span> CookTemplateStringsArray ( <var>template</var>, <var>substitutions</var> )</h1>
+    <p>The abstract operation CookTemplateStringsArray takes arguments <var>template</var> (an ECMAScript language value) and <var>substitutions</var> (a List of ECMAScript language values).</p>
+    <emu-note><span class="note">Note</span><div class="note-contents">
+      <p>Note, this abstract operation is copied from the <a href="https://github.com/tc39/proposal-string-cooked">String.cooked proposal</a>.</p>
+    </div></emu-note>
+    <p>It performs the following steps when called:</p>
+    <emu-alg><ol><li>Let <var>numberOfSubstitutions</var> be the number of elements in <var>substitutions</var>.</li><li>Let <var>cooked</var> be ?&nbsp;ToObject(<var>template</var>).</li><li>Let <var>literalSegments</var> be ?&nbsp;LengthOfArrayLike(<var>cooked</var>).</li><li>If <var>literalSegments</var> ≤ 0, return the empty String.</li><li>Let <var>stringElements</var> be a new empty List.</li><li>Let <var>nextIndex</var> be 0.</li><li>Repeat,<ol><li>Let <var>nextKey</var> be !&nbsp;ToString(𝔽(<var>nextIndex</var>)).</li><li>Let <var>nextVal</var> be ?&nbsp;Get(<var>cooked</var>, <var>nextKey</var>).</li><li>If Type(<var>nextVal</var>) is Undefined, throw a <emu-val>TypeError</emu-val> exception.</li><li>Let <var>nextSeg</var> be ?&nbsp;ToString(<var>nextVal</var>).</li><li>Append the code unit elements of <var>nextSeg</var> to the end of <var>stringElements</var>.</li><li>If <var>nextIndex</var> + 1 = <var>literalSegments</var>, then<ol><li>Return the String value whose code units are the elements in the List <var>stringElements</var>. If <var>stringElements</var> has no elements, the empty String is returned.</li></ol></li><li>If <var>nextIndex</var> &lt; <var>numberOfSubstitutions</var>, let <var>next</var> be <var>substitutions</var>[<var>nextIndex</var>].</li><li>Else, let <var>next</var> be the empty String.</li><li>Let <var>nextSub</var> be ?&nbsp;ToString(<var>next</var>).</li><li>Append the code unit elements of <var>nextSub</var> to the end of <var>stringElements</var>.</li><li>Set <var>nextIndex</var> to <var>nextIndex</var> + 1.</li></ol></li></ol></emu-alg>
+  </emu-clause>
 </emu-clause><emu-annex id="sec-copyright-and-software-license">
       <h1><span class="secnum">A</span> Copyright &amp; Software License</h1>
       
       <h2>Copyright Notice</h2>
-      <p>© 2022 Your Name(s) Here</p>
+      <p>© 2022 Justin Ridgewell</p>
 
       <h2>Software License</h2>
       <p>All Software contained in this document ("Software") is protected by copyright and is being made available under the "BSD License", included below. This Software may be subject to third party rights (rights from parties other than Ecma International), including patent rights, and no licenses under such third party rights are granted under this license even if the third party concerned is a member of Ecma International. SEE THE ECMA CODE OF CONDUCT IN PATENT MATTERS AVAILABLE AT https://ecma-international.org/memento/codeofconduct.htm FOR INFORMATION REGARDING THE LICENSING OF PATENT CLAIMS THAT ARE REQUIRED TO IMPLEMENT ECMA INTERNATIONAL STANDARDS.</p>

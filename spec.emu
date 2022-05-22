@@ -4,20 +4,308 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
 <script src="./spec.js"></script>
 <pre class="metadata">
-title: Proposal Title Goes Here
-stage: -1
-contributors: Your Name(s) Here
+title: String Dedent
+status: proposal
+stage: 1
+contributors: Justin Ridgewell
+location: https://tc39.es/proposal-string-dedent/
 </pre>
 
-<emu-clause id="sec-demo-clause">
-  <h1>This is an emu-clause</h1>
-  <p>This is an algorithm:</p>
-  <emu-alg>
-    1. Let _proposal_ be *undefined*.
-    1. If IsAccepted(_proposal_),
-      1. Let _stage_ be *0*.
-    1. Else,
-      1. Let _stage_ be *-1*.
-    1. Return ? ToString(_proposal_).
-  </emu-alg>
+<emu-clause id="sec-scope">
+  <h1>Scope</h1>
+  <p>
+    This is the spec text of the <a href="https://github.com/tc39/proposal-string-dedent/">String Dedent proposal</a> in ECMAScript.
+    String dedenting removes leading indentation from each line of a multiline string.
+  </p>
+</emu-clause>
+
+<emu-clause id="sec-properties-of-the-string-constructor">
+  <h1>Properties of the String Constructor <emu-xref href="#sec-properties-of-the-string-constructor"></emu-xref></h1>
+
+  <ins class="block">
+
+  <emu-clause id="sec-string.dedent">
+    <h1>String.dedent ( _templateOrFn_, ..._substitutions_ )</h1>
+    <emu-note>
+      <p>The `String.dedent` function may be called with either a template array and a variable number of substitutions, or it may be called with a function which itself takes a template array and a variable number of substitutions.</p>
+      <p>When called with a template and a variable number of substitutions, a string is returned which has common leading indentation removed from all lines with non-whitespace.</p>
+      <p>When called with a function, a closure is returned which wraps the function. When the closure is called with a template and variable number of substitutions, the common leading indentation of the temlpate is removed and the result of calling the function with this new dedented template and substitutions is returned.</p>
+      <p>Common leading indentation is defined as the longest sequence of whitespace characters that match exactly on every line that contains non-whitespace. Empty lines and lines which contain only whitespace do not affect common leading indentation.</p>
+      <p>When removing the common leading indentation, lines which contain only whitespace will have all whitespace removed.</p>
+    </emu-note>
+    <emu-alg>
+      1. If Type(_templateOrFn_) is Object and IsCallable(_templateOrFn_) is *true*, then
+        1. Let _tag_ be _templateOrFn_.
+        1. Let _closure_ be a new Abstract Closure with parameters (_template_, ..._substitutions_) that captures _tag_ and performs the following steps when called:
+          1. Let _R_ be the *this* value.
+          1. Let _dedented_ be ? DedentTemplateStringsArray(_template_).
+          1. Let _args_ be the list-concatenation of &laquo; _dedented_ &raquo; and _substitutions_.
+          1. Return ? Call(_tag_, _R_, _args_).
+      1. If ? IsArray(_templateOrFn_) is *true*, then
+        1. Let _dedented_ be ? DedentTemplateStringsArray(_template_).
+        1. Return ? CookTemplateStringsArray(_dedented_, _substitutions_).
+      1. Throw a *TypeError* exception.
+    </emu-alg>
+    <emu-note>
+      <p>The `dedent` function is intended for use as a tag function of a Tagged Template (<emu-xref href="#sec-tagged-templates"></emu-xref>). When called as such, the first argument will be a well formed template object and the rest parameter will contain the substitution values.</p>
+    </emu-note>
+  </emu-note>
+
+  <emu-clause id="sec-dedent-template-strings-array" type="abstract operation">
+    <h1>
+      DedentTemplateStringsArray (
+        _template_: an ECMAScript language value,
+      )
+    </h1>
+    <dl class="header">
+    </dl>
+    <emu-alg>
+      1. For each element _e_ of the GlobalDedentRegistry List, do
+        1. If SameValue(_e_.[[Key]], _template_) is *true*, return _e_.[[Value]].
+      1. Assert: GlobalDedentRegistry does not currently contain an entry for _template_.
+      1. Let _dedentedCooked_ be ? DedentStringsArray(_template_).
+      1. Let _dedentedRaw_ be ? DedentStringsArray(? Get(_template_, *"raw"*)).
+      1. Let _cookedArr_ be CreateArrayFromList(_dedentedCooked_).
+      1. Let _rawArr_ be CreateArrayFromList(_dedentedRaw_).
+      1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
+      1. Perform ! DefinePropertyOrThrow(_cookedArr_, *"raw"*, PropertyDescriptor { [[Value]]: _rawArr_, [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }).
+      1. Perform ! SetIntegrityLevel(_cookedArr_, ~frozen~).
+      1. Append the Record { [[Key]]: _template_, [[Value]]: _cookedArr_ } to the GlobalDedentRegistry List.
+      1. Return _cookedArr_.
+    </emu-alg>
+    <p>The GlobalDedentRegistry is a List that is globally available. It is shared by all realms. Prior to the evaluation of any ECMAScript code it is initialized as a new empty List. Elements of the GlobalDedentRegistry are Records with the structure defined in <emu-xref href="#table-globaldedentregistry-record-fields"></emu-xref>.</p>
+    <emu-table id="table-globaldedentregistry-record-fields" caption="GlobalDedentRegistry Record Fields">
+      <table>
+        <tr>
+          <th>
+            Field Name
+          </th>
+          <th>
+            Value
+          </th>
+          <th>
+            Usage
+          </th>
+        </tr>
+        <tr>
+          <td>
+            [[Key]]
+          </td>
+          <td>
+            an ECMAScript value
+          </td>
+          <td>
+            A template strings array key used to ensure `String.dedent`'s return value maintains a consistent object identity.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            [[Value]]
+          </td>
+          <td>
+            an ECMAScript value
+          </td>
+          <td>
+            A template strings array that has been dedented.
+          </td>
+        </tr>
+      </table>
+    </emu-table>
+  </emu-clause>
+
+  <emu-clause id="sec-dedent-strings-array" type="abstract operation">
+    <h1>
+      DedentStringsArray (
+        _template_: an ECMAScript language value,
+      )
+    </h1>
+    <dl class="header">
+    </dl>
+    <emu-alg>
+      1. Let _index_ be 0.
+      1. Let _blocks_ be a new empty List.
+      1. Let _t_ be ? ToObject(_template_).
+      1. Let _len_ be ? LengthOfArrayLike(_t_).
+      1. Repeat, while _index_ &lt; _len_,
+        1. Let _str_ be ? Get(_t_, ! ToString(𝔽(_index_))).
+        1. If Type(_str_) is Undefined, then
+          1. Note: After the template literal revision, cooked template strings arrays can contain *undefined* when an illegal escape sequence is found.
+          1. Append ~empty~ to _blocks_.
+        1. Else if Type(_str_) is not String, then
+          1. Let _lines_ be a new empty List.
+          1. Let _start_ be 0.
+          1. Let _i_ be 0.
+          1. For each code unit _C_ that is an element of _str_, do
+            1. Let _n_ be 1.
+            1. If _C_ is *"\r"*, then
+              1. If ! Get(_str_, ! ToString(𝔽(_i_ + 1)) is *"\n"*, then
+                1. Set _n_ to 2.
+            1. If _C_ is *"\n"* or _C_ is *"\r"* or _C_ is *"\u2028"* or _C_ is *"\u2029"*, then
+              1. Let _substr_ be the substring of _str_ from _start_ to _i_.
+              1. Let _newline_ be the substring of _str_ from _i_ to _i_ + _n_.
+              1. Append the Record { [[String]]: _substr_, [[Newline]]: _newline_ } to _lines_.
+              1. Set _start_ to _i_ + _n_.
+            1. Set _i_ to _i_ + _n_.
+          1. Let _strLen_ be the length of _str_.
+          1. Let _tail_ be the substring of _str_ from _start_ to _strLen_.
+          1. Append the Record { [[String]]: _tail_, [[Newline]]: *""* } to _lines_.
+          1. Append _lines_ to _blocks_.
+        1. Else, throw a *TypeError* exception.
+        1. Set _index_ to _index_ + 1.
+      1. Let _common_ be ~empty~.
+      1. Set _index_ to 0.
+      1. For each element _lines_ of _blocks_, do
+        1. If _lines_ is not ~empty~, then
+          1. If _index_ is 0, let _firstBlock_ be *true*; else let _firstBlock_ be *false*.
+          1. If _index_ + 1 is _len_, let _lastBlock_ be *true*; else let _lastBlock_ be *false*.
+          1. Note: _firstBlock_ and _lastBlock_ can both be *true* if the _template_ has length 1.
+          1. Let _lineCount_ be the length of _lines_.
+          1. Let _i_ be 0.
+          1. For each Record { [[String]], [[Newline]] } _line_ of _lines_, do
+            1. If _firstBlock_ is *true* and _i_ is 0, then
+              1. If _line_.[[Newline]] is *""*, then
+                1. Note: The opening line is required to contain a trailing newline. If it does not, either the opening and closing line are the same line or the opening line contains a substitution.
+                1. Throw a *TypeError* exception.
+              1. If the length of _line_.[[String]] is not 0, then
+                1. Note: The opening line must contain no code units besides the trailing newline.
+                1. Throw a *TypeError* exception.
+              1. Set _line_.[[Newline]] to *""*.
+              1. Note: Setting _line_.[[Newline]] removes the opening line from the output.
+            1. If _lastBlock_ is *true* and _i_ + 1 is _lineCount_, then
+              1. If the _lineCount_ is 1, then
+                1. Note: The closing line is required to contain a preceding newline, and checking that there are at least 2 lines in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
+                1. Throw a *TypeError* exception.
+              1. If IsAllWhiteSpace(_line_.[[String]]) is *false*, then
+                1. Note: The closing line may only contain whitespace.
+                1. Throw a *TypeError* exception.
+              1. Set _line_.[[Newline]] to *""*.
+              1. Set _line_.[[String]] to *""*.
+              1. Note: Setting _line_.[[Newline]] and _line_.[[String]] removes the closing line from the output.
+            1. If _firstBlock_ is *false* and _i_ is 0, then let _lineContinuesAfterSubstitution_ be *true*; else let _lineContinuesAfterSubstitution_ be *false*.
+            1. Note: The text that continues on the same line directly after a substitution cannot be the start of a line.
+            1. If _lineContinuesAfterSubstitution_ is *false*, then
+              1. If _lastBlock_ is *false* and _line_.[[Newline]] is *""*, then let _lineEndsWithSubstitution_ be *true*; else let _lineEndsWithSubstitution_ be *false*.
+              1. If _lineEndsWithSubstitution_ is *false* and IsAllWhiteSpace(_line_.[[String]]) is *true*, then
+                1. Note: We consider empty lines to contain only whitespace.
+                1. Set _line_.[[String]] to *""*.
+                1. Note: Lines which contain only whitespace are emptied in the output. Their trailing newline is not removed, so the line is maintained.
+              1. Else,
+                1. Note: Lines which contain substitutions are considered when finding the common indentation.
+                1. Let _leading_ be LeadingWhiteSpaceSubstring(_line_.[[String]]).
+                1. If _common_ is ~empty~, then
+                  1. Set _common_ to _leading_.
+                1. Else,
+                  1. Set _common_ to LongestLeadingMatchingSubstring(_common_, _leading_).
+            1. Set _i_ to _i_ + 1.
+      1. If _common_ is ~empty~, then let _count_ be 0; else let _count_ be the length of _common_.
+      1. Note: _common_ can be ~empty~ if the cooked template contains only *undefined* values.
+      1. Let _dedented_ be a new empty List.
+      1. For each element _lines_ of _blocks_, do
+        1. If _lines_ is ~empty~, then
+          1. Append *undefined* to _dedented_.
+        1. Else,
+          1. Let _s_ be *""*.
+          1. Let _index_ be 0.
+          1. For each Record { [[String]], [[Newline]] } _line_ of _lines_, do
+            1. If _index_ is 0, then let _c_ be 0; else let _c_ be _count_.
+            1. Note: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.
+            1. Let _strLen_ be the length of _line_.[[String]].
+            1. Let _trimmed_ be the substring of _line_.[[String]] from _c_ to _strLen_.
+            1. Set _s_ to the string-concatenation of _s_, _trimmed_, and _line_.[[Newline]].
+            1. Set _index_ to _index_ + 1.
+          1. Append _s_ to _dedented_.
+      1. Return _dedented_.
+    </emu-alg>
+  </emu-clause>
+
+  <emu-clause id="sec-leading-white-space-substring" type="abstract operation">
+    <h1>
+      LeadingWhiteSpaceSubstring (
+        _str_: a String,
+      )
+    </h1>
+    <dl class="header">
+    </dl>
+    <emu-alg>
+      1. Let _l_ be the String value that is a copy of _S_ with only leading white space.
+      1. Return _l_.
+    </emu-alg>
+    <p>The definition of white space is |WhiteSpace|. When determining whether a Unicode code point is in Unicode general category &ldquo;Space_Separator&rdquo; (&ldquo;Zs&rdquo;), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <emu-xref href="#sec-ecmascript-language-types-string-type"></emu-xref>.</p>
+  </emu-clause>
+
+  <emu-clause id="sec-is-all-white-space" type="abstract operation">
+    <h1>
+      IsAllWhiteSpace (
+        _str_: a String,
+      )
+    </h1>
+    <dl class="header">
+    </dl>
+    <emu-alg>
+      1. Let _len_ be the length of _str_.
+      1. Let _leading_ be LeadingWhiteSpaceSubstring(_str_).
+      1. Let _leadingLen_ be the length of _leading_.
+      1. If _len_ is _leadingLen_, return *true*.
+      1. Return *false*.
+    </emu-alg>
+  </emu-clause>
+
+  <emu-clause id="sec-longest-leading-matching-substring" type="abstract operation">
+    <h1>
+      LongestLeadingMatchingSubstring (
+        _a_: a String,
+        _b_: a String,
+      )
+    </h1>
+    <dl class="header">
+    </dl>
+    <emu-alg>
+      1. Let _aLen_ be the length of _a_.
+      1. Let _bLen_ be the length of _b_.
+      1. If _aLen_ is less than _bLen_, let _len_ be _aLen_; else let _len_ be _bLen_.
+      1. For each integer _i_ starting with 0 such that _i_ &le; _len_, in ascending order, do
+        1. Let _aChar_ be the substring of _a_ from _i_ to _i_ + 1.
+        1. Let _bChar_ be the substring of _b_ from _i_ to _i_ + 1.
+        1. If _aChar_ is not _bChar_, then
+          1. Return the substring of _a_ from 0 to _i_.
+      1. Return the substring of _a_ from 0 to _len_.
+    </emu-alg>
+  </emu-clause>
+
+  </ins>
+
+  <emu-clause id="sec-cook-template-strings-array" type="abstract operation">
+    <h1>
+      CookTemplateStringsArray (
+        _template_: an ECMAScript language value,
+        _substitutions_: a List of ECMAScript language values,
+      )
+    </h1>
+    <dl class="header">
+    </dl>
+    <emu-note>
+      <p>Note, this abstract operation is copied from the <a href="https://github.com/tc39/proposal-string-cooked">String.cooked proposal</a>.</p>
+    </emu-note>
+    <emu-alg>
+      1. Let _numberOfSubstitutions_ be the number of elements in _substitutions_.
+      1. Let _cooked_ be ? ToObject(_template_).
+      1. Let _literalSegments_ be ? LengthOfArrayLike(_cooked_).
+      1. If _literalSegments_ &le; 0, return the empty String.
+      1. Let _stringElements_ be a new empty List.
+      1. Let _nextIndex_ be 0.
+      1. Repeat,
+        1. Let _nextKey_ be ! ToString(𝔽(_nextIndex_)).
+        1. Let _nextVal_ be ? Get(_cooked_, _nextKey_).
+        1. If Type(_nextVal_) is Undefined, throw a *TypeError* exception.
+        1. Let _nextSeg_ be ? ToString(_nextVal_).
+        1. Append the code unit elements of _nextSeg_ to the end of _stringElements_.
+        1. If _nextIndex_ + 1 = _literalSegments_, then
+          1. Return the String value whose code units are the elements in the List _stringElements_. If _stringElements_ has no elements, the empty String is returned.
+        1. If _nextIndex_ &lt; _numberOfSubstitutions_, let _next_ be _substitutions_[_nextIndex_].
+        1. Else, let _next_ be the empty String.
+        1. Let _nextSub_ be ? ToString(_next_).
+        1. Append the code unit elements of _nextSub_ to the end of _stringElements_.
+        1. Set _nextIndex_ to _nextIndex_ + 1.
+    </emu-alg>
+  </emu-clause>
 </emu-clause>
