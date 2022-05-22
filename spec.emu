@@ -9,6 +9,7 @@ status: proposal
 stage: 1
 contributors: Justin Ridgewell
 location: https://tc39.es/proposal-string-dedent/
+markEffects: true
 </pre>
 
 <emu-clause id="sec-scope">
