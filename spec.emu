@@ -60,11 +60,12 @@ location: https://tc39.es/proposal-string-dedent/
     <dl class="header">
     </dl>
     <emu-alg>
+      1. Let _t_ be ? ToObject(_template_).
       1. For each element _e_ of the GlobalDedentRegistry List, do
-        1. If SameValue(_e_.[[Key]], _template_) is *true*, return _e_.[[Value]].
+        1. If SameValue(_e_.[[Key]], _t_) is *true*, return _e_.[[Value]].
       1. Assert: GlobalDedentRegistry does not currently contain an entry for _template_.
-      1. Let _dedentedCooked_ be ? DedentStringsArray(_template_).
-      1. Let _dedentedRaw_ be ? DedentStringsArray(? Get(_template_, *"raw"*)).
+      1. Let _dedentedCooked_ be ? DedentStringsArray(_t_).
+      1. Let _dedentedRaw_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
       1. Let _cookedArr_ be CreateArrayFromList(_dedentedCooked_).
       1. Let _rawArr_ be CreateArrayFromList(_dedentedRaw_).
       1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
@@ -131,14 +132,15 @@ location: https://tc39.es/proposal-string-dedent/
         1. If Type(_str_) is Undefined, then
           1. Note: After the template literal revision, cooked template strings arrays can contain *undefined* when an illegal escape sequence is found.
           1. Append ~empty~ to _blocks_.
-        1. Else if Type(_str_) is not String, then
+        1. Else if Type(_str_) is String, then
           1. Let _lines_ be a new empty List.
+          1. Let _strLen_ be the length of _str_.
           1. Let _start_ be 0.
           1. Let _i_ be 0.
           1. For each code unit _C_ that is an element of _str_, do
             1. Let _n_ be 1.
             1. If _C_ is *"\r"*, then
-              1. If ! Get(_str_, ! ToString(𝔽(_i_ + 1)) is *"\n"*, then
+              1. If _i_ + 1 &lt; _strLen_ and ! Get(_str_, ! ToString(𝔽(_i_ + 1)) is *"\n"*, then
                 1. Set _n_ to 2.
             1. If _C_ is *"\n"* or _C_ is *"\r"* or _C_ is *"\u2028"* or _C_ is *"\u2029"*, then
               1. Let _substr_ be the substring of _str_ from _start_ to _i_.
@@ -146,7 +148,6 @@ location: https://tc39.es/proposal-string-dedent/
               1. Append the Record { [[String]]: _substr_, [[Newline]]: _newline_ } to _lines_.
               1. Set _start_ to _i_ + _n_.
             1. Set _i_ to _i_ + _n_.
-          1. Let _strLen_ be the length of _str_.
           1. Let _tail_ be the substring of _str_ from _start_ to _strLen_.
           1. Append the Record { [[String]]: _tail_, [[Newline]]: *""* } to _lines_.
           1. Append _lines_ to _blocks_.
@@ -160,31 +161,36 @@ location: https://tc39.es/proposal-string-dedent/
           1. If _index_ + 1 is _len_, let _lastBlock_ be *true*; else let _lastBlock_ be *false*.
           1. Note: _firstBlock_ and _lastBlock_ can both be *true* if the _template_ has length 1.
           1. Let _lineCount_ be the length of _lines_.
+          1. If _firstBlock_ is *true*, then
+            1. Assert: _lines_ contains at least 1 item, guaranteed by the _tail_ append.
+            1. Let _line_ be _lines_[0].
+            1. If _line_.[[Newline]] is *""*, then
+              1. Note: The opening line is required to contain a trailing newline. If it does not, either the opening and closing line are the same line or the opening line contains a substitution.
+              1. Throw a *TypeError* exception.
+            1. If the length of _line_.[[String]] is not 0, then
+              1. Note: The opening line must contain no code units besides the trailing newline.
+              1. Throw a *TypeError* exception.
+            1. Set _line_.[[Newline]] to *""*.
+            1. Note: Setting _line_.[[Newline]] removes the opening line from the output.
+          1. If _lastBlock_ is *true*, then
+            1. Assert: _lines_ contains at least 1 item, guaranteed by the _tail_ append.
+            1. If the _lineCount_ is 1, then
+              1. Note: The closing line is required to contain a preceding newline, and checking that there are at least 2 lines in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
+              1. Throw a *TypeError* exception.
+            1. Let _line_ be _lines_[_lineCount_ - 1].
+            1. If IsAllWhiteSpace(_line_.[[String]]) is *false*, then
+              1. Note: The closing line may only contain whitespace.
+              1. Throw a *TypeError* exception.
+            1. Let _prev_ be _lines_[_lineCount_ - 2].
+            1. Set _line_.[[String]] to *""*.
+            1. Set _prev_.[[Newline]] to *""*.
+            1. Note: Setting _line_.[[String]] and _prev_.[[Newline]] removes the closing line from the output.
           1. Let _i_ be 0.
           1. For each Record { [[String]], [[Newline]] } _line_ of _lines_, do
-            1. If _firstBlock_ is *true* and _i_ is 0, then
-              1. If _line_.[[Newline]] is *""*, then
-                1. Note: The opening line is required to contain a trailing newline. If it does not, either the opening and closing line are the same line or the opening line contains a substitution.
-                1. Throw a *TypeError* exception.
-              1. If the length of _line_.[[String]] is not 0, then
-                1. Note: The opening line must contain no code units besides the trailing newline.
-                1. Throw a *TypeError* exception.
-              1. Set _line_.[[Newline]] to *""*.
-              1. Note: Setting _line_.[[Newline]] removes the opening line from the output.
-            1. If _lastBlock_ is *true* and _i_ + 1 is _lineCount_, then
-              1. If the _lineCount_ is 1, then
-                1. Note: The closing line is required to contain a preceding newline, and checking that there are at least 2 lines in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
-                1. Throw a *TypeError* exception.
-              1. If IsAllWhiteSpace(_line_.[[String]]) is *false*, then
-                1. Note: The closing line may only contain whitespace.
-                1. Throw a *TypeError* exception.
-              1. Set _line_.[[Newline]] to *""*.
-              1. Set _line_.[[String]] to *""*.
-              1. Note: Setting _line_.[[Newline]] and _line_.[[String]] removes the closing line from the output.
             1. If _firstBlock_ is *false* and _i_ is 0, then let _lineContinuesAfterSubstitution_ be *true*; else let _lineContinuesAfterSubstitution_ be *false*.
             1. Note: The text that continues on the same line directly after a substitution cannot be the start of a line.
             1. If _lineContinuesAfterSubstitution_ is *false*, then
-              1. If _lastBlock_ is *false* and _line_.[[Newline]] is *""*, then let _lineEndsWithSubstitution_ be *true*; else let _lineEndsWithSubstitution_ be *false*.
+              1. If _lastBlock_ is *false* and _i_ + 1 is _lineCount_, then let _lineEndsWithSubstitution_ be *true*; else let _lineEndsWithSubstitution_ be *false*.
               1. If _lineEndsWithSubstitution_ is *false* and IsAllWhiteSpace(_line_.[[String]]) is *true*, then
                 1. Note: We consider empty lines to contain only whitespace.
                 1. Set _line_.[[String]] to *""*.
@@ -197,6 +203,7 @@ location: https://tc39.es/proposal-string-dedent/
                 1. Else,
                   1. Set _common_ to LongestLeadingMatchingSubstring(_common_, _leading_).
             1. Set _i_ to _i_ + 1.
+        1. Set _index_ to _index_ + 1.
       1. If _common_ is ~empty~, then let _count_ be 0; else let _count_ be the length of _common_.
       1. Note: _common_ can be ~empty~ if the cooked template contains only *undefined* values.
       1. Let _dedented_ be a new empty List.
