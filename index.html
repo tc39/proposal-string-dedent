@@ -2556,7 +2556,7 @@ li.menu-search-result-term:before {
 
   <emu-clause id="sec-dedent-template-strings-array" type="abstract operation" aoid="DedentTemplateStringsArray">
     <h1><span class="secnum">2.1.1</span> DedentTemplateStringsArray ( <var>template</var> )</h1>
-    <p>The abstract operation DedentTemplateStringsArray takes argument <var>template</var> (an ECMAScript language value). It performs the following steps when called:</p>
+    <p>The abstract operation DedentTemplateStringsArray takes argument <var>template</var> (an ECMAScript language value) and returns an Array. It performs the following steps when called:</p>
     <emu-alg><ol><li>Let <var>t</var> be ?&nbsp;ToObject(<var>template</var>).</li><li>For each element <var>e</var> of the GlobalDedentRegistry List, do<ol><li>If SameValue(<var>e</var>.[[Key]], <var>t</var>) is <emu-val>true</emu-val>, return <var>e</var>.[[Value]].</li></ol></li><li>Assert: GlobalDedentRegistry does not currently contain an entry for <var>template</var>.</li><li>Let <var>dedentedCooked</var> be ?&nbsp;<emu-xref aoid="DedentStringsArray" id="_ref_4"><a href="#sec-dedent-strings-array">DedentStringsArray</a></emu-xref>(<var>t</var>).</li><li>Let <var>dedentedRaw</var> be ?&nbsp;<emu-xref aoid="DedentStringsArray" id="_ref_5"><a href="#sec-dedent-strings-array">DedentStringsArray</a></emu-xref>(? Get(<var>t</var>, <emu-val>"raw"</emu-val>)).</li><li>Let <var>cookedArr</var> be CreateArrayFromList(<var>dedentedCooked</var>).</li><li>Let <var>rawArr</var> be CreateArrayFromList(<var>dedentedRaw</var>).</li><li>Perform !&nbsp;SetIntegrityLevel(<var>rawArr</var>, <emu-const>frozen</emu-const>).</li><li>Perform !&nbsp;DefinePropertyOrThrow(<var>cookedArr</var>, <emu-val>"raw"</emu-val>, PropertyDescriptor { [[Value]]: <var>rawArr</var>, [[Writable]]: <emu-val>false</emu-val>, [[Enumerable]]: <emu-val>false</emu-val>, [[Configurable]]: <emu-val>false</emu-val> }).</li><li>Perform !&nbsp;SetIntegrityLevel(<var>cookedArr</var>, <emu-const>frozen</emu-const>).</li><li>Append the Record { [[Key]]: <var>template</var>, [[Value]]: <var>cookedArr</var> } to the GlobalDedentRegistry List.</li><li>Return <var>cookedArr</var>.</li></ol></emu-alg>
     <p>The GlobalDedentRegistry is a List that is globally available. It is shared by all realms. Prior to the evaluation of any ECMAScript code it is initialized as a new empty List. Elements of the GlobalDedentRegistry are Records with the structure defined in <emu-xref href="#table-globaldedentregistry-record-fields" id="_ref_0"><a href="#table-globaldedentregistry-record-fields">Table 1</a></emu-xref>.</p>
     <emu-table id="table-globaldedentregistry-record-fields" caption="GlobalDedentRegistry Record Fields"><figure><figcaption>Table 1: GlobalDedentRegistry Record Fields</figcaption>
@@ -2577,7 +2577,7 @@ li.menu-search-result-term:before {
             [[Key]]
           </td>
           <td>
-            an ECMAScript value
+            an ECMAScript language value
           </td>
           <td>
             A template strings array key used to ensure <code>String.dedent</code>'s return value maintains a consistent object identity.
@@ -2588,7 +2588,7 @@ li.menu-search-result-term:before {
             [[Value]]
           </td>
           <td>
-            an ECMAScript value
+            an ECMAScript language value
           </td>
           <td>
             A template strings array that has been dedented.
@@ -2600,13 +2600,13 @@ li.menu-search-result-term:before {
 
   <emu-clause id="sec-dedent-strings-array" type="abstract operation" aoid="DedentStringsArray">
     <h1><span class="secnum">2.1.2</span> DedentStringsArray ( <var>template</var> )</h1>
-    <p>The abstract operation DedentStringsArray takes argument <var>template</var> (an ECMAScript language value). It performs the following steps when called:</p>
+    <p>The abstract operation DedentStringsArray takes argument <var>template</var> (an ECMAScript language value) and returns an Array. It performs the following steps when called:</p>
     <emu-alg><ol><li>Let <var>t</var> be ?&nbsp;ToObject(<var>template</var>).</li><li>Let <var>len</var> be ?&nbsp;LengthOfArrayLike(<var>t</var>).</li><li>If <var>len</var> is 0, then<ol><li>Note: Well-formed template strings arrays always contain at least 1 string.</li><li>Throw a <emu-val>TypeError</emu-val> exception.</li></ol></li><li>Let <var>blocks</var> be ?&nbsp;<emu-xref aoid="SplitTemplateIntoBlockLines" id="_ref_6"><a href="#sec-split-template-into-block-lines">SplitTemplateIntoBlockLines</a></emu-xref>(<var>t</var>, <var>len</var>).</li><li>Perform ?&nbsp;<emu-xref aoid="EmptyWhiteSpaceLines" id="_ref_7"><a href="#sec-empty-white-space-lines">EmptyWhiteSpaceLines</a></emu-xref>(<var>blocks</var>, <var>len</var>).</li><li>Perform ?&nbsp;<emu-xref aoid="RemoveOpeningAndClosingLines" id="_ref_8"><a href="#sec-remove-opening-and-closing-lines">RemoveOpeningAndClosingLines</a></emu-xref>(<var>blocks</var>, <var>len</var>).</li><li>Let <var>common</var> be ?&nbsp;<emu-xref aoid="DetermineCommonLeadingIndentation" id="_ref_9"><a href="#sec-determine-common-leading-indentation">DetermineCommonLeadingIndentation</a></emu-xref>(<var>blocks</var>, <var>len</var>).</li><li>Let <var>count</var> be the length of <var>common</var>.</li><li>Let <var>dedented</var> be a new empty List.</li><li>For each element <var>lines</var> of <var>blocks</var>, do<ol><li>If <var>lines</var> is empty, then<ol><li>Append <emu-val>undefined</emu-val> to <var>dedented</var>.</li></ol></li><li>Else,<ol><li>Let <var>s</var> be <emu-val>""</emu-val>.</li><li>Let <var>index</var> be 0.</li><li>For each Record { [[String]], [[Newline]] } <var>line</var> of <var>lines</var>, do<ol><li>If <var>index</var> is 0, then let <var>c</var> be 0; else let <var>c</var> be <var>count</var>.</li><li>Note: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.</li><li>Let <var>strLen</var> be the length of <var>line</var>.[[String]].</li><li>Let <var>trimmed</var> be the substring of <var>line</var>.[[String]] from <var>c</var> to <var>strLen</var>.</li><li>Set <var>s</var> to the string-concatenation of <var>s</var>, <var>trimmed</var>, and <var>line</var>.[[Newline]].</li><li>Set <var>index</var> to <var>index</var> + 1.</li></ol></li><li>Append <var>s</var> to <var>dedented</var>.</li></ol></li></ol></li><li>Return <var>dedented</var>.</li></ol></emu-alg>
   </emu-clause>
 
   <emu-clause id="sec-split-template-into-block-lines" type="abstract operation" aoid="SplitTemplateIntoBlockLines">
     <h1><span class="secnum">2.1.3</span> SplitTemplateIntoBlockLines ( <var>template</var>, <var>len</var> )</h1>
-    <p>The abstract operation SplitTemplateIntoBlockLines takes arguments <var>template</var> (an ECMAScript value) and <var>len</var> (a non-negative integer) and returns a List of Lists of Records with fields [[String]] (a String), and [[Newline]] (a String). It performs the following steps when called:</p>
+    <p>The abstract operation SplitTemplateIntoBlockLines takes arguments <var>template</var> (an ECMAScript language value) and <var>len</var> (a non-negative integer) and returns a List of Lists of Records with fields [[String]] (a String), and [[Newline]] (a String). It performs the following steps when called:</p>
     <emu-alg><ol><li>Let <var>index</var> be 0.</li><li>Repeat, while <var>index</var> &lt; <var>len</var>,<ol><li>Let <var>str</var> be ?&nbsp;Get(<var>t</var>, !&nbsp;ToString(𝔽(<var>index</var>))).</li><li>If Type(<var>str</var>) is String, then<ol><li>Let <var>lines</var> be a new empty List.</li><li>Let <var>strLen</var> be the length of <var>str</var>.</li><li>Let <var>start</var> be 0.</li><li>For each integer <var>i</var> starting with 0 such that <var>i</var> ≤ <var>strLen</var>, in ascending order, do<ol><li>Let <var>c</var> be the substring of <var>str</var> from <var>i</var> to <var>i</var> + 1.</li><li>Let <var>n</var> be 1.</li><li>If <var>c</var> is <emu-val>"\r"</emu-val>, then<ol><li>Let <var>next</var> be the substring of <var>str</var> from <var>i</var> + 1 to <var>i</var> + 2.</li><li>If <var>next</var> is <emu-val>"\n"</emu-val>, set <var>n</var> to 2.</li></ol></li><li>If <var>c</var> is <emu-val>"\n"</emu-val> or <var>c</var> is <emu-val>"\r"</emu-val> or <var>c</var> is <emu-val>"\u2028"</emu-val> or <var>c</var> is <emu-val>"\u2029"</emu-val>, then<ol><li>Let <var>substr</var> be the substring of <var>str</var> from <var>start</var> to <var>i</var>.</li><li>Let <var>newline</var> be the substring of <var>str</var> from <var>i</var> to <var>i</var> + <var>n</var>.</li><li>Append the Record { [[String]]: <var>substr</var>, [[Newline]]: <var>newline</var> } to <var>lines</var>.</li><li>Set <var>start</var> to <var>i</var> + <var>n</var>.</li></ol></li><li>Set <var>i</var> to <var>i</var> + <var>n</var>.</li></ol></li><li>Let <var>tail</var> be the substring of <var>str</var> from <var>start</var> to <var>strLen</var>.</li><li>Append the Record { [[String]]: <var>tail</var>, [[Newline]]: <emu-val>""</emu-val> } to <var>lines</var>.</li><li>Append <var>lines</var> to <var>blocks</var>.</li></ol></li><li>Else,<ol><li>Note: After the template literal revision, cooked template strings arrays can contain <emu-val>undefined</emu-val> when an illegal escape sequence is found.</li><li>Append « » to <var>blocks</var>.</li></ol></li><li>Set <var>index</var> to <var>index</var> + 1.</li></ol></li><li>Return <var>blocks</var>.</li></ol></emu-alg>
   </emu-clause>
 
@@ -2630,20 +2630,20 @@ li.menu-search-result-term:before {
 
   <emu-clause id="sec-leading-white-space-substring" type="abstract operation" aoid="LeadingWhiteSpaceSubstring">
     <h1><span class="secnum">2.1.7</span> LeadingWhiteSpaceSubstring ( <var>str</var> )</h1>
-    <p>The abstract operation LeadingWhiteSpaceSubstring takes argument <var>str</var> (a String). It performs the following steps when called:</p>
+    <p>The abstract operation LeadingWhiteSpaceSubstring takes argument <var>str</var> (a String) and returns a String. It performs the following steps when called:</p>
     <emu-alg><ol><li>Let <var>len</var> be the length of <var>str</var>.</li><li>For each integer <var>i</var> starting with 0 such that <var>i</var> ≤ <var>len</var>, in ascending order, do<ol><li>Let <var>c</var> be the substring of <var>str</var> from <var>i</var> to <var>i</var> + 1.</li><li>If <var>c</var> is not white space, then<ol><li>Return the substring of <var>str</var> from 0 to <var>i</var>.</li></ol></li></ol></li><li>Return <var>str</var>.</li></ol></emu-alg>
     <p>The definition of white space is <emu-nt>WhiteSpace</emu-nt>. When determining whether a Unicode code point is in Unicode general category “Space_Separator” (“Zs”), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <a href="https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-ecmascript-language-types-string-type">#sec-ecmascript-language-types-string-type</a>.</p>
   </emu-clause>
 
   <emu-clause id="sec-is-all-white-space" type="abstract operation" aoid="IsAllWhiteSpace">
     <h1><span class="secnum">2.1.8</span> IsAllWhiteSpace ( <var>str</var> )</h1>
-    <p>The abstract operation IsAllWhiteSpace takes argument <var>str</var> (a String). It performs the following steps when called:</p>
+    <p>The abstract operation IsAllWhiteSpace takes argument <var>str</var> (a String) and returns a Boolean. It performs the following steps when called:</p>
     <emu-alg><ol><li>Let <var>trimmed</var> be TrimString(<var>str</var>, <emu-const>start</emu-const>).</li><li>If <var>trimmed</var> is <emu-val>""</emu-val>, return <emu-val>true</emu-val>.</li><li>Return <emu-val>false</emu-val>.</li></ol></emu-alg>
   </emu-clause>
 
   <emu-clause id="sec-longest-leading-matching-substring" type="abstract operation" aoid="LongestLeadingMatchingSubstring">
     <h1><span class="secnum">2.1.9</span> LongestLeadingMatchingSubstring ( <var>a</var>, <var>b</var> )</h1>
-    <p>The abstract operation LongestLeadingMatchingSubstring takes arguments <var>a</var> (a String) and <var>b</var> (a String). It performs the following steps when called:</p>
+    <p>The abstract operation LongestLeadingMatchingSubstring takes arguments <var>a</var> (a String) and <var>b</var> (a String) and returns a String. It performs the following steps when called:</p>
     <emu-alg><ol><li>Let <var>aLen</var> be the length of <var>a</var>.</li><li>Let <var>bLen</var> be the length of <var>b</var>.</li><li>If <var>aLen</var> is less than <var>bLen</var>, let <var>len</var> be <var>aLen</var>; else let <var>len</var> be <var>bLen</var>.</li><li>For each integer <var>i</var> starting with 0 such that <var>i</var> ≤ <var>len</var>, in ascending order, do<ol><li>Let <var>aChar</var> be the substring of <var>a</var> from <var>i</var> to <var>i</var> + 1.</li><li>Let <var>bChar</var> be the substring of <var>b</var> from <var>i</var> to <var>i</var> + 1.</li><li>If <var>aChar</var> is not <var>bChar</var>, then<ol><li>Return the substring of <var>a</var> from 0 to <var>i</var>.</li></ol></li></ol></li><li>Return the substring of <var>a</var> from 0 to <var>len</var>.</li></ol></emu-alg>
   </emu-clause>
 

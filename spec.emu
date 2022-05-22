@@ -56,7 +56,7 @@ location: https://tc39.es/proposal-string-dedent/
     <h1>
       DedentTemplateStringsArray (
         _template_: an ECMAScript language value,
-      )
+      ): an Array
     </h1>
     <dl class="header">
     </dl>
@@ -94,7 +94,7 @@ location: https://tc39.es/proposal-string-dedent/
             [[Key]]
           </td>
           <td>
-            an ECMAScript value
+            an ECMAScript language value
           </td>
           <td>
             A template strings array key used to ensure `String.dedent`'s return value maintains a consistent object identity.
@@ -105,7 +105,7 @@ location: https://tc39.es/proposal-string-dedent/
             [[Value]]
           </td>
           <td>
-            an ECMAScript value
+            an ECMAScript language value
           </td>
           <td>
             A template strings array that has been dedented.
@@ -119,7 +119,7 @@ location: https://tc39.es/proposal-string-dedent/
     <h1>
       DedentStringsArray (
         _template_: an ECMAScript language value,
-      )
+      ): an Array
     </h1>
     <dl class="header">
     </dl>
@@ -156,7 +156,7 @@ location: https://tc39.es/proposal-string-dedent/
   <emu-clause id="sec-split-template-into-block-lines" type="abstract operation">
     <h1>
       SplitTemplateIntoBlockLines (
-        _template_: an ECMAScript value,
+        _template_: an ECMAScript language value,
         _len_: a non-negative integer,
       ): a List of Lists of Records with fields [[String]] (a String), and [[Newline]] (a String)
     </h1>
@@ -301,7 +301,7 @@ location: https://tc39.es/proposal-string-dedent/
     <h1>
       LeadingWhiteSpaceSubstring (
         _str_: a String,
-      )
+      ): a String
     </h1>
     <dl class="header">
     </dl>
@@ -320,7 +320,7 @@ location: https://tc39.es/proposal-string-dedent/
     <h1>
       IsAllWhiteSpace (
         _str_: a String,
-      )
+      ): a Boolean
     </h1>
     <dl class="header">
     </dl>
@@ -336,7 +336,7 @@ location: https://tc39.es/proposal-string-dedent/
       LongestLeadingMatchingSubstring (
         _a_: a String,
         _b_: a String,
-      )
+      ): a String
     </h1>
     <dl class="header">
     </dl>
