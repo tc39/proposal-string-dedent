@@ -206,3 +206,4 @@ To summarise the [problem](#problem) section above:
 
 - [Original TC39 thread](https://es.discourse.group/t/triple-backtick-template-literal-with-indentation-support/337)
 - [2020-09 Committee Meeting](https://github.com/tc39/notes/blob/HEAD/meetings/2020-09/sept-23.md#stringdedent-for-stage-1)
+- [2022-03 Committee Meeting](https://github.com/tc39/notes/blob/HEAD/meetings/2022-03/mar-30.md#stringdedent-status-update)
