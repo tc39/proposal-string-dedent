@@ -71,7 +71,7 @@ markEffects: true
       1. Perform ! DefinePropertyOrThrow(_cookedArr_, *"raw"*, PropertyDescriptor { [[Value]]: _rawArr_, [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }).
       1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
       1. Perform ! SetIntegrityLevel(_cookedArr_, ~frozen~).
-      1. Append the Record { [[Key]]: _template_, [[Value]]: _cookedArr_ } to the GlobalDedentRegistry List.
+      1. Append the Record { [[Key]]: _t_, [[Value]]: _cookedArr_ } to the GlobalDedentRegistry List.
       1. Return _cookedArr_.
     </emu-alg>
     <p>The GlobalDedentRegistry is a List that is globally available. It is shared by all realms. Prior to the evaluation of any ECMAScript code it is initialized as a new empty List. Elements of the GlobalDedentRegistry are Records with the structure defined in <emu-xref href="#table-globaldedentregistry-record-fields"></emu-xref>.</p>
