@@ -20,8 +20,8 @@ markEffects: true
   </p>
 </emu-clause>
 
-<emu-clause id="sec-properties-of-the-string-constructor">
-  <h1>Properties of the String Constructor</h1>
+<emu-clause id="proposal-properties-of-the-string-constructor">
+  <h1>Properties of the String Constructor <emu-xref href="#sec-properties-of-the-string-constructor"></emu-xref></h1>
 
   <ins class="block">
 
@@ -64,7 +64,7 @@ markEffects: true
     <emu-alg>
       1. Let _t_ be ? ToObject(_template_).
       1. For each element _e_ of the GlobalDedentRegistry List, do
-        1. If SameValue(_e_.[[Key]], _t_) is *true*, return _e_.[[Value]].
+        1. If _e_.[[Key]] is not ~empty~ and SameValue(_e_.[[Key]], _t_) is *true*, return _e_.[[Value]].
       1. Assert: GlobalDedentRegistry does not currently contain an entry for _template_.
       1. Let _cookedArr_ be ? DedentStringsArray(_t_).
       1. Let _rawArr_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
@@ -387,4 +387,41 @@ markEffects: true
         1. Set _nextIndex_ to _nextIndex_ + 1.
     </emu-alg>
   </emu-clause>
+</emu-clause>
+
+<emu-clause id="proposal-weakref-execution">
+  <h1>Execution <emu-xref href="#sec-weakref-execution"></emu-xref></h1>
+
+  <p>At any time, if a set of objects _S_ is not live, an ECMAScript implementation may perform the following steps atomically:</p>
+
+  <emu-alg>
+    1. For each element _obj_ of _S_, do
+      1. For each WeakRef _ref_ such that _ref_.[[WeakRefTarget]] is _obj_, do
+        1. Set _ref_.[[WeakRefTarget]] to ~empty~.
+      1. For each FinalizationRegistry _fg_ such that _fg_.[[Cells]] contains a Record _cell_ such that _cell_.[[WeakRefTarget]] is _obj_, do
+        1. Set _cell_.[[WeakRefTarget]] to ~empty~.
+        1. Optionally, perform HostEnqueueFinalizationRegistryCleanupJob(_fg_).
+      1. For each WeakMap _map_ such that _map_.[[WeakMapData]] contains a Record _r_ such that _r_.[[Key]] is _obj_, do
+        1. Set _r_.[[Key]] to ~empty~.
+        1. Set _r_.[[Value]] to ~empty~.
+      1. For each WeakSet _set_ such that _set_.[[WeakSetData]] contains _obj_, do
+        1. Replace the element of _set_.[[WeakSetData]] whose value is _obj_ with an element whose value is ~empty~.
+      1. <ins>If the GlobalDedentRegistry List contains a Record _r_ sutch that _r_.[[Key]] is _obj_, then</ins>
+        1. <ins>Set _r_.[[Key]] to ~empty~.</ins>
+        1. <ins>Set _r_.[[Value]] to ~empty~.</ins>
+  </emu-alg>
+
+  <emu-note>
+    <p>Together with the definition of liveness, this clause prescribes legal optimizations that an implementation may apply regarding WeakRefs.</p>
+
+    <p>It is possible to access an object without observing its identity. Optimizations such as dead variable elimination and scalar replacement on properties of non-escaping objects whose identity is not observed are allowed. These optimizations are thus allowed to observably empty WeakRefs that point to such objects.</p>
+
+    <p>On the other hand, if an object's identity is observable, and that object is in the [[WeakRefTarget]] internal slot of a WeakRef, optimizations such as rematerialization that observably empty the WeakRef are prohibited.</p>
+
+    <p>Because calling HostEnqueueFinalizationRegistryCleanupJob is optional, registered objects in a FinalizationRegistry do not necessarily hold that FinalizationRegistry live. Implementations may omit FinalizationRegistry callbacks for any reason, e.g., if the FinalizationRegistry itself becomes dead, or if the application is shutting down.</p>
+  </emu-note>
+  <emu-note>
+    <p>Implementations are not obligated to empty WeakRefs for maximal sets of non-live objects.</p>
+    <p>If an implementation chooses a non-live set _S_ in which to empty WeakRefs, it must empty WeakRefs for all objects in _S_ simultaneously. In other words, an implementation must not empty a WeakRef pointing to an object _obj_ without emptying out other WeakRefs that, if not emptied, could result in an execution that observes the Object value of _obj_.</p>
+  </emu-note>
 </emu-clause>
