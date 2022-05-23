@@ -172,7 +172,7 @@ markEffects: true
           1. Let _strLen_ be the length of _str_.
           1. Let _start_ be 0.
           1. Let _i_ be 0.
-          1. Repeat, while _i_ &lt; _strLen_, in ascending order,
+          1. Repeat, while _i_ &lt; _strLen_,
             1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
             1. Let _n_ be 1.
             1. If _c_ is *"\r"*, then
@@ -284,7 +284,7 @@ markEffects: true
             1. If _common_ is ~empty~, then
               1. Set _common_ to _leading_.
             1. Else,
-              1. Set _common_ to LongestLeadingMatchingSubstring(_common_, _leading_).
+              1. Set _common_ to LongestMatchingLeadingSubstring(_common_, _leading_).
           1. Set _i_ to _i_ + 1.
       1. If _common_ is ~empty~, then
         1. NOTE: _common_ can be ~empty~ if the cooked template contains only *undefined* values.
@@ -304,7 +304,7 @@ markEffects: true
     <emu-alg>
       1. Let _len_ be the length of _str_.
       1. Let _i_ be 0.
-      1. Repeat, while _i_ &lt; _len_, in ascending order,
+      1. Repeat, while _i_ &lt; _len_,
         1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
         1. If _c_ is not white space, then
           1. Return the substring of _str_ from 0 to _i_.
@@ -328,9 +328,9 @@ markEffects: true
     </emu-alg>
   </emu-clause>
 
-  <emu-clause id="sec-longest-leading-matching-substring" type="abstract operation">
+  <emu-clause id="sec-longest-matching-leading-substring" type="abstract operation">
     <h1>
-      LongestLeadingMatchingSubstring (
+      LongestMatchingLeadingSubstring (
         _a_: a String,
         _b_: a String,
       ): a String
@@ -342,7 +342,7 @@ markEffects: true
       1. Let _bLen_ be the length of _b_.
       1. If _aLen_ &lt; _bLen_, let _len_ be _aLen_; else let _len_ be _bLen_.
       1. Let _i_ be 0.
-      1. Repeat, while _i_ &lt; _len_, in ascending order,
+      1. Repeat, while _i_ &lt; _len_,
         1. Let _aChar_ be the substring of _a_ from _i_ to _i_ + 1.
         1. Let _bChar_ be the substring of _b_ from _i_ to _i_ + 1.
         1. If _aChar_ is not _bChar_, then
