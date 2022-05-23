@@ -65,7 +65,7 @@ markEffects: true
       1. Let _t_ be ? ToObject(_template_).
       1. For each element _e_ of the GlobalDedentRegistry List, do
         1. If _e_.[[Key]] is not ~empty~ and SameValue(_e_.[[Key]], _t_) is *true*, return _e_.[[Value]].
-      1. Assert: GlobalDedentRegistry does not currently contain an entry for _template_.
+      1. Assert: GlobalDedentRegistry does not currently contain an entry for _t_.
       1. Let _cookedArr_ be ? DedentStringsArray(_t_).
       1. Let _rawArr_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
       1. Perform ! DefinePropertyOrThrow(_cookedArr_, *"raw"*, PropertyDescriptor { [[Value]]: _rawArr_, [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }).
