@@ -129,9 +129,9 @@ markEffects: true
         1. NOTE: Well-formed template strings arrays always contain at least 1 string.
         1. Throw a *TypeError* exception.
       1. Let _blocks_ be ? SplitTemplateIntoBlockLines(_t_, _len_).
-      1. Perform ? EmptyWhiteSpaceLines(_blocks_, _len_).
+      1. Perform ? EmptyWhiteSpaceLines(_blocks_).
       1. Perform ? RemoveOpeningAndClosingLines(_blocks_, _len_).
-      1. Let _common_ be DetermineCommonLeadingIndentation(_blocks_, _len_).
+      1. Let _common_ be DetermineCommonLeadingIndentation(_blocks_).
       1. Let _count_ be the length of _common_.
       1. Let _dedented_ be a new empty List.
       1. For each element _lines_ of _blocks_, do
@@ -164,6 +164,7 @@ markEffects: true
     <dl class="header">
     </dl>
     <emu-alg>
+      1. Let _blocks_ be a new empty List.
       1. Let _index_ be 0.
       1. Repeat, while _index_ &lt; _len_,
         1. Let _str_ be ? Get(_t_, ! ToString(𝔽(_index_))).
@@ -185,7 +186,7 @@ markEffects: true
               1. Set _start_ to _i_ + _n_.
             1. Set _i_ to _i_ + _n_.
           1. Let _tail_ be the substring of _str_ from _start_ to _strLen_.
-          1. If _i_ + 1 &lt; _len_, let _lineEndsWithSubstitution_ be *true*; else let _lineEndsWithSubstitution_ be *false*.
+          1. If _index_ + 1 &lt; _len_, let _lineEndsWithSubstitution_ be *true*; else let _lineEndsWithSubstitution_ be *false*.
           1. Append the Record { [[String]]: _tail_, [[Newline]]: *""*, [[LineEndsWithSubstitution]]: _lineEndsWithSubstitution_ } to _lines_.
           1. Append _lines_ to _blocks_.
         1. Else,
@@ -200,7 +201,6 @@ markEffects: true
     <h1>
       EmptyWhiteSpaceLines (
         _blocks_: a List of Lists of Records with fields [[String]] (a String), [[Newline]] (a String), and [[LineEndsWithSubstitution]] (a Boolean),
-        _len_: a non-negative integer,
       )
     </h1>
     <dl class="header">
@@ -265,7 +265,6 @@ markEffects: true
     <h1>
       DetermineCommonLeadingIndentation (
         _blocks_: a List of Lists of Records with fields [[String]] (a String), [[Newline]] (a String), and [[LineEndsWithSubstitution]] (a Boolean),
-        _len_: a non-negative integer,
       ): a String
     </h1>
     <dl class="header">
@@ -308,6 +307,7 @@ markEffects: true
         1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
         1. If _c_ is not white space, then
           1. Return the substring of _str_ from 0 to _i_.
+        1. Set _i_ to _i_ + 1.
       1. Return _str_.
     </emu-alg>
     <p>The definition of white space is |WhiteSpace|. When determining whether a Unicode code point is in Unicode general category &ldquo;Space_Separator&rdquo; (&ldquo;Zs&rdquo;), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <emu-xref href="#sec-ecmascript-language-types-string-type"></emu-xref>.</p>
@@ -347,6 +347,7 @@ markEffects: true
         1. Let _bChar_ be the substring of _b_ from _i_ to _i_ + 1.
         1. If _aChar_ is not _bChar_, then
           1. Return the substring of _a_ from 0 to _i_.
+        1. Set _i_ to _i_ + 1.
       1. Return the substring of _a_ from 0 to _len_.
     </emu-alg>
   </emu-clause>
