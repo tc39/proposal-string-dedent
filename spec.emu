@@ -66,12 +66,10 @@ markEffects: true
       1. For each element _e_ of the GlobalDedentRegistry List, do
         1. If SameValue(_e_.[[Key]], _t_) is *true*, return _e_.[[Value]].
       1. Assert: GlobalDedentRegistry does not currently contain an entry for _template_.
-      1. Let _dedentedCooked_ be ? DedentStringsArray(_t_).
-      1. Let _dedentedRaw_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
-      1. Let _cookedArr_ be CreateArrayFromList(_dedentedCooked_).
-      1. Let _rawArr_ be CreateArrayFromList(_dedentedRaw_).
-      1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
+      1. Let _cookedArr_ be ? DedentStringsArray(_t_).
+      1. Let _rawArr_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
       1. Perform ! DefinePropertyOrThrow(_cookedArr_, *"raw"*, PropertyDescriptor { [[Value]]: _rawArr_, [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }).
+      1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
       1. Perform ! SetIntegrityLevel(_cookedArr_, ~frozen~).
       1. Append the Record { [[Key]]: _template_, [[Value]]: _cookedArr_ } to the GlobalDedentRegistry List.
       1. Return _cookedArr_.
@@ -127,7 +125,7 @@ markEffects: true
     <emu-alg>
       1. Let _t_ be ? ToObject(_template_).
       1. Let _len_ be ? LengthOfArrayLike(_t_).
-      1. If _len_ is 0, then
+      1. If _len_ = 0, then
         1. NOTE: Well-formed template strings arrays always contain at least 1 string.
         1. Throw a *TypeError* exception.
       1. Let _blocks_ be ? SplitTemplateIntoBlockLines(_t_, _len_).
@@ -144,7 +142,7 @@ markEffects: true
           1. Let _index_ be 0.
           1. For each Record { [[String]], [[Newline]], [[LineEndsWithSubstitution]] } _line_ of _lines_, do
             1. NOTE: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.
-            1. If _index_ is 0, let _c_ be 0; else let _c_ be _count_.
+            1. If _index_ = 0, let _c_ be 0; else let _c_ be _count_.
             1. Let _strLen_ be the length of _line_.[[String]].
             1. Let _trimmed_ be the substring of _line_.[[String]] from _c_ to _strLen_.
             1. Append _trimmed_ to _stringElements_.
@@ -152,7 +150,7 @@ markEffects: true
             1. Set _index_ to _index_ + 1.
           1. Let _str_ be the String value whose code units are the elements in the List _stringElements_.
           1. Append _str_ to _dedented_.
-      1. Return _dedented_.
+      1. Return CreateArrayFromList(_dedented_).
     </emu-alg>
   </emu-clause>
 
@@ -173,7 +171,8 @@ markEffects: true
           1. Let _lines_ be a new empty List.
           1. Let _strLen_ be the length of _str_.
           1. Let _start_ be 0.
-          1. For each integer _i_ starting with 0 such that _i_ &lt; _strLen_, in ascending order, do
+          1. Let _i_ be 0.
+          1. Repeat, while _i_ &lt; _strLen_, in ascending order,
             1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
             1. Let _n_ be 1.
             1. If _c_ is *"\r"*, then
@@ -235,11 +234,11 @@ markEffects: true
       1. If _firstBlock_ is not empty, then
         1. NOTE: _firstBlock_ may be empty if the cooked template strings array contains an illegal escape sequence.
         1. Let _lineCount_ be the length of _firstBlock_.
-        1. If the _lineCount_ is 1, then
+        1. If _lineCount_ = 1, then
           1. NOTE: The opening line is required to contain a trailing newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the opening line contains a substitution.
           1. Throw a *TypeError* exception.
         1. Let _openingLine_ be _firstBlock_[0].
-        1. If the length of _openingLine_.[[String]] is not 0, then
+        1. If _openingLine_.[[String]] is not empty, then
           1. NOTE: The opening line must not contain code units besides the trailing newline.
           1. Throw a *TypeError* exception.
         1. NOTE: Setting _openingLine_.[[Newline]] removes the opening line from the output.
@@ -248,7 +247,7 @@ markEffects: true
       1. If _lastBlock_ is not empty, then
         1. NOTE: _lastBlock_ may be empty if the cooked template strings array contains an illegal escape sequence.
         1. Let _lineCount_ be the length of _lastBlock_.
-        1. If the _lineCount_ is 1, then
+        1. If _lineCount_ = 1, then
           1. NOTE: The closing line is required to be preceded by a newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
           1. Throw a *TypeError* exception.
         1. Let _closingLine_ be _lastBlock_[_lineCount_ - 1].
@@ -304,7 +303,8 @@ markEffects: true
     </dl>
     <emu-alg>
       1. Let _len_ be the length of _str_.
-      1. For each integer _i_ starting with 0 such that _i_ &lt; _len_, in ascending order, do
+      1. Let _i_ be 0.
+      1. Repeat, while _i_ &lt; _len_, in ascending order,
         1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
         1. If _c_ is not white space, then
           1. Return the substring of _str_ from 0 to _i_.
@@ -341,7 +341,8 @@ markEffects: true
       1. Let _aLen_ be the length of _a_.
       1. Let _bLen_ be the length of _b_.
       1. If _aLen_ &lt; _bLen_, let _len_ be _aLen_; else let _len_ be _bLen_.
-      1. For each integer _i_ starting with 0 such that _i_ &lt; _len_, in ascending order, do
+      1. Let _i_ be 0.
+      1. Repeat, while _i_ &lt; _len_, in ascending order,
         1. Let _aChar_ be the substring of _a_ from _i_ to _i_ + 1.
         1. Let _bChar_ be the substring of _b_ from _i_ to _i_ + 1.
         1. If _aChar_ is not _bChar_, then
