@@ -168,6 +168,7 @@ String.dedent(pythonInterpreter)`
 
 ## In other languages
 
+- *CoffeeScript* - [block strings](https://coffeescript.org/#strings) using `'''` and `"""` triple-quotes.
 - *Java* - [text blocks](https://openjdk.java.net/jeps/378) using triple-quotes.
 - *Scala* - [multiline strings](https://docs.scala-lang.org/overviews/scala-book/two-notes-about-strings.html)
   using triple-quotes and `.stripMargin`.
