@@ -4,7 +4,7 @@ Champions: [@jridgewell](https://github.com/jridgewell), [@hemanth](https://gith
 
 Author: [@mmkal](https://github.com/mmkal)
 
-Status: [Stage 1](https://tc39.es/process-document/)
+Status: [Stage 2](https://tc39.es/process-document/)
 
 ## Problem
 
@@ -207,3 +207,4 @@ To summarise the [problem](#problem) section above:
 - [Original TC39 thread](https://es.discourse.group/t/triple-backtick-template-literal-with-indentation-support/337)
 - [2020-09 Committee Meeting](https://github.com/tc39/notes/blob/HEAD/meetings/2020-09/sept-23.md#stringdedent-for-stage-1)
 - [2022-03 Committee Meeting](https://github.com/tc39/notes/blob/HEAD/meetings/2022-03/mar-30.md#stringdedent-status-update)
+- 2022-06 Committee Meeting (pending)
