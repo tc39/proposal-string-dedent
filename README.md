@@ -89,7 +89,7 @@ create table student(
 ```
 
 However, these libraries incur a runtime cost, and are subtly inconsistent with
-they way they perform "dedenting". The most popular package is stagnant without
+the way they perform "dedenting". The most popular package is stagnant without
 bug fixes and has problematic interpreting of the Template Object's `.raw`
 array, and none are able to pass the dedented text to tag template functions.
 
