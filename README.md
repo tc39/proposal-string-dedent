@@ -109,9 +109,9 @@ Additionally, even if a userland library were to support passing to tagged
 templates, the array would not be a true Template Object in proposals like
 [`Array.isTemplateObject`](https://github.com/tc39/proposal-array-is-template-object).
 This harms the ability of tagged templates functions to differentiate dedented
-templates that exist in the actual program source text (and ascribe ascribe a
-higher trust level to) vs a dynamically generated string (which may contain a
-user generated exploit string).
+templates that exist in the actual program source text (and ascribe a higher
+trust level to) vs a dynamically generated string (which may contain a user
+generated exploit string).
 
 ## Proposed solution
 
