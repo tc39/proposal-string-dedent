@@ -89,7 +89,7 @@ create table student(
 ```
 
 However, these libraries incur a runtime cost, and are subtly inconsistent with
-they way they perform "dedenting". The most popular package is stagnant without
+the way they perform "dedenting". The most popular package is stagnant without
 bug fixes and has problematic interpreting of the Template Object's `.raw`
 array, and none are able to pass the dedented text to tag template functions.
 
@@ -109,9 +109,9 @@ Additionally, even if a userland library were to support passing to tagged
 templates, the array would not be a true Template Object in proposals like
 [`Array.isTemplateObject`](https://github.com/tc39/proposal-array-is-template-object).
 This harms the ability of tagged templates functions to differentiate dedented
-templates that exist in the actual program source text (and ascribe ascribe a
-higher trust level to) vs a dynamically generated string (which may contain a
-user generated exploit string).
+templates that exist in the actual program source text (and ascribe a higher
+trust level to) vs a dynamically generated string (which may contain a user
+generated exploit string).
 
 ## Proposed solution
 
