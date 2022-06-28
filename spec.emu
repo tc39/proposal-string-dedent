@@ -44,6 +44,7 @@ markEffects: true
           1. Return ? Call(_tag_, _R_, _args_).
         1. Return CreateBuiltinFunction(_closure_, 1, *""*, &laquo; &raquo;).
       1. If ? IsArray(_templateOrFn_) is *true*, then
+        1. Let _template_ be _templateOrFn_.
         1. Let _dedented_ be ? DedentTemplateStringsArray(_template_).
         1. Return ? CookTemplateStringsArray(_dedented_, _substitutions_).
       1. Throw a *TypeError* exception.
