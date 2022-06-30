@@ -68,7 +68,7 @@ markEffects: true
         1. If _e_.[[Key]] is not ~empty~ and SameValue(_e_.[[Key]], _t_) is *true*, return _e_.[[Value]].
       1. Assert: GlobalDedentRegistry does not currently contain an entry for _t_.
       1. Let _raw_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
-      1. Let _cookedArr_ be CreateArrayFromList(CookStringsArray(_raw_)).
+      1. Let _cookedArr_ be CreateArrayFromList(CookStrings(_raw_)).
       1. Let _rawArr_ be CreateArrayFromList(_raw_).
       1. Perform ! DefinePropertyOrThrow(_cookedArr_, *"raw"*, PropertyDescriptor { [[Value]]: _rawArr_, [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }).
       1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
@@ -156,8 +156,8 @@ markEffects: true
 
   <emu-clause id="sec-cook-strings-array" type="abstract operation">
     <h1>
-      CookStringsArray (
-        _raw_: a List of Strings,
+      CookStrings (
+        _raw_: a List of either Strings or *undefined*,
       ): a List of either String or Undefined
     </h1>
     <dl class="header">
