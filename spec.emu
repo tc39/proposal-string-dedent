@@ -120,7 +120,7 @@ markEffects: true
     <h1>
       DedentStringsArray (
         _template_: an ECMAScript language value,
-      ): either a normal completion containing a List of Strings, or a throw completion
+      ): either a normal completion containing a List of either String or *undefined*, or a throw completion
     </h1>
     <dl class="header">
     </dl>
@@ -157,8 +157,8 @@ markEffects: true
   <emu-clause id="sec-cook-strings-array" type="abstract operation">
     <h1>
       CookStrings (
-        _raw_: a List of either Strings or *undefined*,
-      ): a List of either String or Undefined
+        _raw_: a List of either String or *undefined*,
+      ): a List of either String or *undefined*
     </h1>
     <dl class="header">
     </dl>
@@ -166,8 +166,7 @@ markEffects: true
       1. Let _cooked_ be a new empty List.
       1. For each element _str_ of _raw_, do
         1. If Type(_str_) is String, then
-          1. Let _template_ be the string-concatenation of *"`"*, _str_, and *"`"*.
-          1. Let _parsed_ be ParseText(StringToCodePoints(_template_), |NoSubstitutionTemplate|).
+          1. Let _parsed_ be ParseText(StringToCodePoints(_str_), |TemplateCharacters|).
           1. NOTE: _str_ is a user controlled (String.raw can be manually invoked with a value), and the parse above is not guaranteed to be a valid template.
           1. If _parsed_ is a List of errors, then
             1. Append *undefined* to _cooked_.
