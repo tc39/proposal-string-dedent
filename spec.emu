@@ -67,9 +67,9 @@ markEffects: true
       1. For each element _e_ of the GlobalDedentRegistry List, do
         1. If _e_.[[Key]] is not ~empty~ and SameValue(_e_.[[Key]], _t_) is *true*, return _e_.[[Value]].
       1. Assert: GlobalDedentRegistry does not currently contain an entry for _t_.
-      1. Let _dedented_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
+      1. Let _raw_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
       1. Let _cookedArr_ be CreateArrayFromList(CookStringsArray(_raw_)).
-      1. Let _rawArr_ be CreateArrayFromList(_dedented_).
+      1. Let _rawArr_ be CreateArrayFromList(_raw_).
       1. Perform ! DefinePropertyOrThrow(_cookedArr_, *"raw"*, PropertyDescriptor { [[Value]]: _rawArr_, [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }).
       1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
       1. Perform ! SetIntegrityLevel(_cookedArr_, ~frozen~).
