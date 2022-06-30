@@ -67,8 +67,9 @@ markEffects: true
       1. For each element _e_ of the GlobalDedentRegistry List, do
         1. If _e_.[[Key]] is not ~empty~ and SameValue(_e_.[[Key]], _t_) is *true*, return _e_.[[Value]].
       1. Assert: GlobalDedentRegistry does not currently contain an entry for _t_.
-      1. Let _cookedArr_ be ? DedentStringsArray(_t_).
-      1. Let _rawArr_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
+      1. Let _dedented_ be ? DedentStringsArray(? Get(_t_, *"raw"*)).
+      1. Let _cookedArr_ be CreateArrayFromList(CookStringsArray(_raw_)).
+      1. Let _rawArr_ be CreateArrayFromList(_dedented_).
       1. Perform ! DefinePropertyOrThrow(_cookedArr_, *"raw"*, PropertyDescriptor { [[Value]]: _rawArr_, [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }).
       1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
       1. Perform ! SetIntegrityLevel(_cookedArr_, ~frozen~).
@@ -119,7 +120,7 @@ markEffects: true
     <h1>
       DedentStringsArray (
         _template_: an ECMAScript language value,
-      ): either a normal completion containing an Array or a throw completion
+      ): either a normal completion containing a List of Strings, or a throw completion
     </h1>
     <dl class="header">
     </dl>
@@ -139,19 +140,44 @@ markEffects: true
         1. If _lines_ is empty, then
           1. Append *undefined* to _dedented_.
         1. Else,
-          1. Let _stringElements_ be a new empty List.
+          1. Let _out_ be *""*.
           1. Let _index_ be 0.
           1. For each Record { [[String]], [[Newline]], [[LineEndsWithSubstitution]] } _line_ of _lines_, do
             1. NOTE: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.
             1. If _index_ = 0, let _c_ be 0; else let _c_ be _count_.
             1. Let _strLen_ be the length of _line_.[[String]].
             1. Let _trimmed_ be the substring of _line_.[[String]] from _c_ to _strLen_.
-            1. Append _trimmed_ to _stringElements_.
-            1. Append _line_.[[Newline]] to _stringElements_.
+            1. Set _out_ to the string-concatenation of _out_, _trimmed_, and _line_.[[Newline]].
             1. Set _index_ to _index_ + 1.
-          1. Let _str_ be the String value whose code units are the elements in the List _stringElements_.
-          1. Append _str_ to _dedented_.
-      1. Return CreateArrayFromList(_dedented_).
+          1. Append _out_ to _dedented_.
+      1. Return _dedented_.
+    </emu-alg>
+  </emu-clause>
+
+  <emu-clause id="sec-cook-strings-array" type="abstract operation">
+    <h1>
+      CookStringsArray (
+        _raw_: a List of Strings,
+      ): a List of either String or Undefined
+    </h1>
+    <dl class="header">
+    </dl>
+    <emu-alg>
+      1. Let _cooked_ be a new empty List.
+      1. For each element _str_ of _raw_, do
+        1. If Type(_str_) is String, then
+          1. Let _template_ be the string-concatenation of *"`"*, _str_, and *"`"*.
+          1. Let _parsed_ be ParseText(StringToCodePoints(_scriptString_), |NoSubstitutionTemplate|).
+          1. NOTE: _str_ is a user controlled (String.raw can be manually invoked with a value), and the parse above is not guaranteed to be a valid template.
+          1. If _parsed_ is a List of errors, then
+            1. Append *undefined* to _cooked_.
+          1. Else,
+            1. Let _val_ be the TV of _parsed_ as defined in <emu-xref href="#sec-template-literal-lexical-components"></emu-xref>.
+            1. NOTE: _val_ can actually be *undefined* if the raw string contains an invalid escape sequence.
+            1. Append _val_ to _cooked_.
+        1. Else,
+          1. Append *undefined* to _cooked_.
+      1. Return _cooked_.
     </emu-alg>
   </emu-clause>
 
@@ -366,7 +392,7 @@ markEffects: true
     <dl class="header">
     </dl>
     <emu-note>
-      <p>Note, this abstract operation is copied from the <a href="https://github.com/tc39/proposal-string-cooked">String.cooked proposal</a>.</p>
+      <p>This abstract operation is copied from the <a href="https://github.com/tc39/proposal-string-cooked">String.cooked proposal</a>.</p>
     </emu-note>
     <emu-alg>
       1. Let _numberOfSubstitutions_ be the number of elements in _substitutions_.
