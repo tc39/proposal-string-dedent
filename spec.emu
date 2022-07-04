@@ -180,7 +180,7 @@ markEffects: true
             1. If _c_ is *"\r"*, then
               1. Let _next_ be the substring of _str_ from _i_ + 1 to _i_ + 2.
               1. If _next_ is *"\n"*, set _n_ to 2.
-            1. If _c_ is *"\n"* or _c_ is *"\r"* or _c_ is *"\u2028"* or _c_ is *"\u2029"*, then
+            1. If _c_ is a line terminator, then
               1. Let _substr_ be the substring of _str_ from _start_ to _i_.
               1. Let _newline_ be the substring of _str_ from _i_ to _i_ + _n_.
               1. Append the Record { [[String]]: _substr_, [[Newline]]: _newline_, [[LineEndsWithSubstitution]]: *false* } to _lines_.
@@ -196,6 +196,7 @@ markEffects: true
         1. Set _index_ to _index_ + 1.
       1. Return _blocks_.
     </emu-alg>
+    <p>The definition of line terminator is |LineTerminator|.</p>
   </emu-clause>
 
   <emu-clause id="sec-empty-white-space-lines" type="abstract operation">
