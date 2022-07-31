@@ -168,7 +168,7 @@ markEffects: true
       1. Let _blocks_ be a new empty List.
       1. Let _index_ be 0.
       1. Repeat, while _index_ &lt; _len_,
-        1. Let _str_ be ? Get(_t_, ! ToString(𝔽(_index_))).
+        1. Let _str_ be ? Get(_template_, ! ToString(𝔽(_index_))).
         1. If Type(_str_) is String, then
           1. Let _lines_ be a new empty List.
           1. Let _strLen_ be the length of _str_.
@@ -210,7 +210,7 @@ markEffects: true
     <emu-alg>
       1. For each element _lines_ of _blocks_, do
         1. Let _lineCount_ be the length of _lines_.
-        1. NOTE: We start _i_ at 1 because because the first line of every block is either (a) the opening line which must be empty or (b) the continuation of a line directly after a template substitution. Neither can be the start of a content line.
+        1. NOTE: We start _i_ at 1 because the first line of every block is either (a) the opening line which must be empty or (b) the continuation of a line directly after a template substitution. Neither can be the start of a content line.
         1. Let _i_ be 1.
         1. Repeat, while _i_ &lt; _lineCount_,
           1. Let _line_ be _lines_[_i_].
