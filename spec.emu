@@ -98,7 +98,7 @@ markEffects: true
             an ECMAScript language value
           </td>
           <td>
-            A template strings array key used to ensure `String.dedent`'s return value maintains a consistent object identity.
+            A template strings array key used to ensure template tag functions wrapped with `String.dedent` see consistent object identity for a given input template.
           </td>
         </tr>
         <tr>
