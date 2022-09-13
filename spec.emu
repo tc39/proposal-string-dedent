@@ -76,7 +76,7 @@ markEffects: true
       1. Append the Record { [[Key]]: _t_, [[Value]]: _cookedArr_ } to the GlobalDedentRegistry List.
       1. Return _cookedArr_.
     </emu-alg>
-    <p>The GlobalDedentRegistry is a List that is globally available. It is shared by all realms. Prior to the evaluation of any ECMAScript code it is initialized as a new empty List. Elements of the GlobalDedentRegistry are Records with the structure defined in <emu-xref href="#table-globaldedentregistry-record-fields"></emu-xref>.</p>
+    <p>The GlobalDedentRegistry is a List that is globally available. Prior to the evaluation of any ECMAScript code it is initialized as a new empty List. Elements of the GlobalDedentRegistry are Records with the structure defined in <emu-xref href="#table-globaldedentregistry-record-fields"></emu-xref>.</p>
     <emu-table id="table-globaldedentregistry-record-fields" caption="GlobalDedentRegistry Record Fields">
       <table>
         <tr>
@@ -120,7 +120,7 @@ markEffects: true
     <h1>
       DedentStringsArray (
         _template_: an ECMAScript language value,
-      ): either a normal completion containing a List of either String or *undefined*, or a throw completion
+      ): either a normal completion containing a List of Strings, or a throw completion
     </h1>
     <dl class="header">
     </dl>
@@ -137,19 +137,17 @@ markEffects: true
       1. Let _count_ be the length of _common_.
       1. Let _dedented_ be a new empty List.
       1. For each element _lines_ of _blocks_, do
-        1. If _lines_ is empty, then
-          1. Append *undefined* to _dedented_.
-        1. Else,
-          1. Let _out_ be *""*.
-          1. Let _index_ be 0.
-          1. For each Record { [[String]], [[Newline]], [[LineEndsWithSubstitution]] } _line_ of _lines_, do
-            1. NOTE: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.
-            1. If _index_ = 0, let _c_ be 0; else let _c_ be _count_.
-            1. Let _strLen_ be the length of _line_.[[String]].
-            1. Let _trimmed_ be the substring of _line_.[[String]] from _c_ to _strLen_.
-            1. Set _out_ to the string-concatenation of _out_, _trimmed_, and _line_.[[Newline]].
-            1. Set _index_ to _index_ + 1.
-          1. Append _out_ to _dedented_.
+        1. Assert: _lines_ is not empty, because SplitTemplateIntoBlockLines guarantees there is at least 1 line per block.
+        1. Let _out_ be *""*.
+        1. Let _index_ be 0.
+        1. For each Record { [[String]], [[Newline]], [[LineEndsWithSubstitution]] } _line_ of _lines_, do
+          1. NOTE: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.
+          1. If _index_ = 0, let _c_ be 0; else let _c_ be _count_.
+          1. Let _strLen_ be the length of _line_.[[String]].
+          1. Let _trimmed_ be the substring of _line_.[[String]] from _c_ to _strLen_.
+          1. Set _out_ to the string-concatenation of _out_, _trimmed_, and _line_.[[Newline]].
+          1. Set _index_ to _index_ + 1.
+        1. Append _out_ to _dedented_.
       1. Return _dedented_.
     </emu-alg>
   </emu-clause>
@@ -157,7 +155,7 @@ markEffects: true
   <emu-clause id="sec-cook-strings-array" type="abstract operation">
     <h1>
       CookStrings (
-        _raw_: a List of either String or *undefined*,
+        _raw_: a List of Strings,
       ): a List of either String or *undefined*
     </h1>
     <dl class="header">
@@ -165,15 +163,12 @@ markEffects: true
     <emu-alg>
       1. Let _cooked_ be a new empty List.
       1. For each element _str_ of _raw_, do
-        1. If Type(_str_) is String, then
-          1. Let _parsed_ be ParseText(StringToCodePoints(_str_), |CookStringsCharactersWithBackslash|).
-          1. Assert: _parsed_ is a Parse Node.
-          1. NOTE: Even though String.dedent can be manually invoked with a value, the |CookStringsCharactersWithBackslash| nonterminal matches every string, so the above parse is guaranteed to succeed.
-          1. Let _val_ be the TV of _parsed_ as defined in <emu-xref href="#sec-template-literal-lexical-components"></emu-xref>.
-          1. NOTE: _val_ can actually be *undefined* if the raw string contains an invalid escape sequence.
-          1. Append _val_ to _cooked_.
-        1. Else,
-          1. Append *undefined* to _cooked_.
+        1. Let _parsed_ be ParseText(StringToCodePoints(_str_), |CookStringsCharactersWithBackslash|).
+        1. Assert: _parsed_ is a Parse Node.
+        1. NOTE: Even though String.dedent can be manually invoked with a value, the |CookStringsCharactersWithBackslash| nonterminal matches every string, so the above parse is guaranteed to succeed.
+        1. Let _val_ be the TV of _parsed_ as defined in <emu-xref href="#sec-template-literal-lexical-components"></emu-xref>.
+        1. NOTE: _val_ can actually be *undefined* if the raw string contains an invalid escape sequence.
+        1. Append _val_ to _cooked_.
       1. Return _cooked_.
     </emu-alg>
 
@@ -257,8 +252,7 @@ markEffects: true
           1. Append the Record { [[String]]: _tail_, [[Newline]]: *""*, [[LineEndsWithSubstitution]]: _lineEndsWithSubstitution_ } to _lines_.
           1. Append _lines_ to _blocks_.
         1. Else,
-          1. NOTE: After the template literal revision, cooked template strings arrays can contain *undefined* when an illegal escape sequence is found.
-          1. Append &laquo; &raquo; to _blocks_.
+          1. Throw a *TypeError* exception.
         1. Set _index_ to _index_ + 1.
       1. Return _blocks_.
     </emu-alg>
@@ -297,35 +291,32 @@ markEffects: true
     <dl class="header">
     </dl>
     <emu-alg>
-      1. Assert: _blocks_ contains at least 1 element.
+      1. Assert: _blocks_ contains at least 1 element, because we know the length of the template strings array is at least 1.
       1. Let _firstBlock_ be _blocks_[0].
-      1. If _firstBlock_ is not empty, then
-        1. NOTE: _firstBlock_ may be empty if the cooked template strings array contains an illegal escape sequence.
-        1. Let _lineCount_ be the length of _firstBlock_.
-        1. If _lineCount_ = 1, then
-          1. NOTE: The opening line is required to contain a trailing newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the opening line contains a substitution.
-          1. Throw a *TypeError* exception.
-        1. Let _openingLine_ be _firstBlock_[0].
-        1. If _openingLine_.[[String]] is not empty, then
-          1. NOTE: The opening line must not contain code units besides the trailing newline.
-          1. Throw a *TypeError* exception.
-        1. NOTE: Setting _openingLine_.[[Newline]] removes the opening line from the output.
-        1. Set _openingLine_.[[Newline]] to *""*.
-      1. Let _lastBlock_ be _blocks_[_len_ - 1].
-      1. If _lastBlock_ is not empty, then
-        1. NOTE: _lastBlock_ may be empty if the cooked template strings array contains an illegal escape sequence.
-        1. Let _lineCount_ be the length of _lastBlock_.
-        1. If _lineCount_ = 1, then
-          1. NOTE: The closing line is required to be preceded by a newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
-          1. Throw a *TypeError* exception.
-        1. Let _closingLine_ be _lastBlock_[_lineCount_ - 1].
-        1. If IsAllWhiteSpace(_closingLine_.[[String]]) is *false*, then
-          1. NOTE: The closing line may only contain whitespace.
-          1. Throw a *TypeError* exception.
-        1. Let _preceding_ be _lastBlock_[_lineCount_ - 2].
-        1. NOTE: Setting _closingLine_.[[String]] and _preceding_.[[Newline]] removes the closing line from the output.
-        1. Set _closingLine_.[[String]] to *""*.
-        1. Set _preceding_.[[Newline]] to *""*.
+      1. Assert: _firstBlock_ is not empty, because SplitTemplateIntoBlockLines guarantees there is at least 1 line per block.
+      1. Let _lineCount_ be the length of _firstBlock_.
+      1. If _lineCount_ = 1, then
+        1. NOTE: The opening line is required to contain a trailing newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the opening line contains a substitution.
+        1. Throw a *TypeError* exception.
+      1. Let _openingLine_ be _firstBlock_[0].
+      1. If _openingLine_.[[String]] is not empty, then
+        1. NOTE: The opening line must not contain code units besides the trailing newline.
+        1. Throw a *TypeError* exception.
+      1. NOTE: Setting _openingLine_.[[Newline]] removes the opening line from the output.
+      1. Set _openingLine_.[[Newline]] to *""*.
+      1. Assert: _lastBlock_ is not empty, because SplitTemplateIntoBlockLines guarantees there is at least 1 line per block.
+      1. Set _lineCount_ to the length of _lastBlock_.
+      1. If _lineCount_ = 1, then
+        1. NOTE: The closing line is required to be preceded by a newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
+        1. Throw a *TypeError* exception.
+      1. Let _closingLine_ be _lastBlock_[_lineCount_ - 1].
+      1. If IsAllWhiteSpace(_closingLine_.[[String]]) is *false*, then
+        1. NOTE: The closing line may only contain whitespace.
+        1. Throw a *TypeError* exception.
+      1. Let _preceding_ be _lastBlock_[_lineCount_ - 2].
+      1. NOTE: Setting _closingLine_.[[String]] and _preceding_.[[Newline]] removes the closing line from the output.
+      1. Set _closingLine_.[[String]] to *""*.
+      1. Set _preceding_.[[Newline]] to *""*.
     </emu-alg>
   </emu-clause>
 
@@ -353,9 +344,7 @@ markEffects: true
             1. Else,
               1. Set _common_ to LongestMatchingLeadingSubstring(_common_, _leading_).
           1. Set _i_ to _i_ + 1.
-      1. If _common_ is ~empty~, then
-        1. NOTE: _common_ can be ~empty~ if the cooked template contains only *undefined* values.
-        1. Return *""*.
+      1. Assert: _common_ is not ~empty~, because SplitTemplateIntoBlockLines guarantees there is at least 1 line per block, and we know the length of the template strings array is at least 1.
       1. Return _common_.
     </emu-alg>
   </emu-clause>
