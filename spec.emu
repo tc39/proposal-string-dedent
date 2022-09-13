@@ -120,7 +120,7 @@ markEffects: true
     <h1>
       DedentStringsArray (
         _template_: an ECMAScript language value,
-      ): either a normal completion containing a List of String, or a throw completion
+      ): either a normal completion containing a List of Strings, or a throw completion
     </h1>
     <dl class="header">
     </dl>
@@ -155,7 +155,7 @@ markEffects: true
   <emu-clause id="sec-cook-strings-array" type="abstract operation">
     <h1>
       CookStrings (
-        _raw_: a List of String,
+        _raw_: a List of Strings,
       ): a List of either String or *undefined*
     </h1>
     <dl class="header">
