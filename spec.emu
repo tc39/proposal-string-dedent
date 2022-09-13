@@ -166,18 +166,59 @@ markEffects: true
       1. Let _cooked_ be a new empty List.
       1. For each element _str_ of _raw_, do
         1. If Type(_str_) is String, then
-          1. Let _parsed_ be ParseText(StringToCodePoints(_str_), |TemplateCharacters|).
-          1. NOTE: _str_ is a user controlled value (String.dedent can be manually invoked with a value), and the parse above is not guaranteed to be a valid template.
-          1. If _parsed_ is a List of errors, then
-            1. Append *undefined* to _cooked_.
-          1. Else,
-            1. Let _val_ be the TV of _parsed_ as defined in <emu-xref href="#sec-template-literal-lexical-components"></emu-xref>.
-            1. NOTE: _val_ can actually be *undefined* if the raw string contains an invalid escape sequence.
-            1. Append _val_ to _cooked_.
+          1. Let _parsed_ be ParseText(StringToCodePoints(_str_), |CookStringsCharactersWithBackslash|).
+          1. Assert: _parsed_ is a Parse Node.
+          1. NOTE: Even though String.dedent can be manually invoked with a value, the |CookStringsCharactersWithBackslash| nonterminal matches every string, so the above parse is guaranteed to succeed.
+          1. Let _val_ be the TV of _parsed_ as defined in <emu-xref href="#sec-template-literal-lexical-components"></emu-xref>.
+          1. NOTE: _val_ can actually be *undefined* if the raw string contains an invalid escape sequence.
+          1. Append _val_ to _cooked_.
         1. Else,
           1. Append *undefined* to _cooked_.
       1. Return _cooked_.
     </emu-alg>
+
+    <emu-clause id="sec-cook-strings-grammar">
+      <h1>The CookStrings Grammar</h1>
+      <p>The following grammar is used by CookStrings. It is identical to |TemplateCharacters| except that it allows *"${"*" and *"`"* to appear without being preceded by a backslash, allows a backslash as the final character, and accepts the empty sequence. Every sequence of code points is matched by this grammar.</p>
+
+      <emu-grammar type="definition">
+        CookStringsCharactersWithBackslash ::
+          CookStringsCharacters? `\`?
+
+        CookStringsCharacters ::
+          CookStringsCharacter CookStringsCharacters?
+
+        CookStringsCharacter ::
+          `$` [lookahead = `{`]
+          ```
+          TemplateCharacter
+      </emu-grammar>
+
+      <emu-clause id="sec-static-semantics-tv-ins" type="sdo">
+        <h1>Static Semantics: TV</h1>
+        <emu-note type="editor">The following lines are added to the definition of TV.</emu-note>
+        <ul>
+          <li>
+            The TV of <emu-grammar>CookStringsCharactersWithBackslash :: [empty]</emu-grammar> is the empty String.
+          </li>
+          <li>
+            The TV of <emu-grammar>CookStringsCharactersWithBackslash :: `\`</emu-grammar> is *undefined*.
+          </li>
+          <li>
+            The TV of <emu-grammar>CookStringsCharactersWithBackslash :: CookStringsCharacters `\`</emu-grammar> is *undefined*.
+          </li>
+          <li>
+            The TV of <emu-grammar>CookStringsCharacters :: CookStringsCharacter CookStringsCharacters</emu-grammar> is *undefined* if either the TV of |CookStringsCharacter| is *undefined* or the TV of |CookStringsCharacters| is *undefined*. Otherwise, it is the string-concatenation of the TV of |CookStringsCharacter| and the TV of |CookStringsCharacters|.
+          </li>
+          <li>
+            The TV of <emu-grammar>CookStringsCharacter :: `$` [lookahead = `{`]</emu-grammar> is *"$"*.
+          </li>
+          <li>
+            The TV of <emu-grammar>CookStringsCharacter :: ```</emu-grammar> is *"`"*.
+          </li>
+          </ul>
+      </emu-clause>
+    </emu-clause>
   </emu-clause>
 
   <emu-clause id="sec-split-template-into-block-lines" type="abstract operation">
