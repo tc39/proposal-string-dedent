@@ -304,6 +304,7 @@ markEffects: true
         1. Throw a *TypeError* exception.
       1. NOTE: Setting _openingLine_.[[Newline]] removes the opening line from the output.
       1. Set _openingLine_.[[Newline]] to *""*.
+      1. Let _lastBlock_ be _blocks_[_len_ - 1].
       1. Assert: _lastBlock_ is not empty, because SplitTemplateIntoBlockLines guarantees there is at least 1 line per block.
       1. Set _lineCount_ to the length of _lastBlock_.
       1. If _lineCount_ = 1, then
