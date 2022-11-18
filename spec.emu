@@ -66,56 +66,20 @@ markEffects: true
     <dl class="header">
     </dl>
     <emu-alg>
-      1. For each element _e_ of the GlobalDedentRegistry List, do
-        1. If _e_.[[Key]] is not ~empty~ and SameValue(_e_.[[Key]], _template_) is *true*, return _e_.[[Value]].
-      1. Assert: GlobalDedentRegistry does not currently contain an entry for _template_.
+      1. Let _realm_ be the current Realm Record.
+      1. Let _dedentMap_ be _realm_.[[DedentMap]].
       1. Let _raw_ be ? DedentStringsArray(? Get(_template_, *"raw"*)).
+      1. For each element _e_ of the _dedentMap_, do
+        1. If _e_.[[Raw]] is not ~empty~ and SameValue(_e_.[[Raw]], _raw_) is *true*, return _e_.[[Dedented]].
+      1. Assert: _dedentMap_ does not currently contain an entry for _raw_.
       1. Let _cookedArr_ be CreateArrayFromList(CookStrings(_raw_)).
       1. Let _rawArr_ be CreateArrayFromList(_raw_).
       1. Perform ! DefinePropertyOrThrow(_cookedArr_, *"raw"*, PropertyDescriptor { [[Value]]: _rawArr_, [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }).
       1. Perform ! SetIntegrityLevel(_rawArr_, ~frozen~).
       1. Perform ! SetIntegrityLevel(_cookedArr_, ~frozen~).
-      1. Append the Record { [[Key]]: _template_, [[Value]]: _cookedArr_ } to the GlobalDedentRegistry List.
+      1. Append the Record { [[Raw]]: _raw_, [[Dedented]]: _cookedArr_ } to _dedentMap_.
       1. Return _cookedArr_.
     </emu-alg>
-    <p>The GlobalDedentRegistry is a List that is globally available. Prior to the evaluation of any ECMAScript code it is initialized as a new empty List. Elements of the GlobalDedentRegistry are Records with the structure defined in <emu-xref href="#table-globaldedentregistry-record-fields"></emu-xref>.</p>
-    <emu-table id="table-globaldedentregistry-record-fields" caption="GlobalDedentRegistry Record Fields">
-      <table>
-        <tr>
-          <th>
-            Field Name
-          </th>
-          <th>
-            Value
-          </th>
-          <th>
-            Usage
-          </th>
-        </tr>
-        <tr>
-          <td>
-            [[Key]]
-          </td>
-          <td>
-            an ECMAScript language value
-          </td>
-          <td>
-            A template strings array key used to ensure template tag functions wrapped with `String.dedent` see consistent object identity for a given input template.
-          </td>
-        </tr>
-        <tr>
-          <td>
-            [[Value]]
-          </td>
-          <td>
-            an ECMAScript language value
-          </td>
-          <td>
-            A template strings array that has been dedented.
-          </td>
-        </tr>
-      </table>
-    </emu-table>
   </emu-clause>
 
   <emu-clause id="sec-dedent-strings-array" type="abstract operation">
@@ -144,7 +108,7 @@ markEffects: true
         1. Let _index_ be 0.
         1. For each Record { [[String]], [[Newline]], [[LineEndsWithSubstitution]] } _line_ of _lines_, do
           1. NOTE: The first line of each block does not need to be trimmed. It's either the opening line, or it's the continuation of a line after a substitution.
-          1. If _index_ = 0, let _c_ be 0; else let _c_ be _count_.
+          1. If _index_ = 0 or _line_.[[String]] is the empty String, let _c_ be 0; else let _c_ be _count_.
           1. Let _strLen_ be the length of _line_.[[String]].
           1. Let _trimmed_ be the substring of _line_.[[String]] from _c_ to _strLen_.
           1. Set _out_ to the string-concatenation of _out_, _trimmed_, and _line_.[[Newline]].
@@ -240,10 +204,10 @@ markEffects: true
           1. Repeat, while _i_ &lt; _strLen_,
             1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
             1. Let _n_ be 1.
-            1. If _c_ is *"\r"*, then
+            1. If _c_ is *"\r"* and _i_ + 1 &lt; _strLen_, then
               1. Let _next_ be the substring of _str_ from _i_ + 1 to _i_ + 2.
               1. If _next_ is *"\n"*, set _n_ to 2.
-            1. If _c_ is a line terminator, then
+            1. If _c_ is matched by |LineTerminator|, then
               1. Let _substr_ be the substring of _str_ from _start_ to _i_.
               1. Let _newline_ be the substring of _str_ from _i_ to _i_ + _n_.
               1. Append the Record { [[String]]: _substr_, [[Newline]]: _newline_, [[LineEndsWithSubstitution]]: *false* } to _lines_.
@@ -258,7 +222,6 @@ markEffects: true
         1. Set _index_ to _index_ + 1.
       1. Return _blocks_.
     </emu-alg>
-    <p>The definition of line terminator is |LineTerminator|.</p>
   </emu-clause>
 
   <emu-clause id="sec-empty-white-space-lines" type="abstract operation">
@@ -313,8 +276,8 @@ markEffects: true
         1. NOTE: The closing line is required to be preceded by a newline, and checking that there are at least 2 elements in _lines_ ensures it. If it does not, either the opening line and the closing line are the same line, or the closing line contains a substitution.
         1. Throw a *TypeError* exception.
       1. Let _closingLine_ be _lastBlock_[_lineCount_ - 1].
-      1. If IsAllWhiteSpace(_closingLine_.[[String]]) is *false*, then
-        1. NOTE: The closing line may only contain whitespace.
+      1. If _closingLine_.[[String]] is not the empty String, then
+        1. NOTE: The closing line may only contain whitespace. We've already performed EmptyWhiteSpaceLines, so if the line is not empty now, it contained some non-whitespace character.
         1. Throw a *TypeError* exception.
       1. Let _preceding_ be _lastBlock_[_lineCount_ - 2].
       1. NOTE: Setting _closingLine_.[[String]] and _preceding_.[[Newline]] removes the closing line from the output.
@@ -340,7 +303,7 @@ markEffects: true
         1. Repeat, while _i_ &lt; _lineCount_,
           1. Let _line_ be _lines_[_i_].
           1. NOTE: Lines which contain substitutions are considered when finding the common indentation. Lines which contain only whitespace have already been emptied.
-          1. If _line_.[[LineEndsWithSubstitution]] is *true* or _line_.[[String]] is not empty, then
+          1. If _line_.[[LineEndsWithSubstitution]] is *true* or _line_.[[String]] is not the empty String, then
             1. Let _leading_ be LeadingWhiteSpaceSubstring(_line_.[[String]]).
             1. If _common_ is ~empty~, then
               1. Set _common_ to _leading_.
@@ -365,12 +328,12 @@ markEffects: true
       1. Let _i_ be 0.
       1. Repeat, while _i_ &lt; _len_,
         1. Let _c_ be the substring of _str_ from _i_ to _i_ + 1.
-        1. If _c_ is not white space, then
+        1. If _c_ does not match |WhiteSpace|, then
           1. Return the substring of _str_ from 0 to _i_.
         1. Set _i_ to _i_ + 1.
       1. Return _str_.
     </emu-alg>
-    <p>The definition of white space is |WhiteSpace|. When determining whether a Unicode code point is in Unicode general category &ldquo;Space_Separator&rdquo; (&ldquo;Zs&rdquo;), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <emu-xref href="#sec-ecmascript-language-types-string-type"></emu-xref>.</p>
+    <p>When determining whether a Unicode code point is in Unicode general category &ldquo;Space_Separator&rdquo; (&ldquo;Zs&rdquo;), code unit sequences are interpreted as UTF-16 encoded code point sequences as specified in <emu-xref href="#sec-ecmascript-language-types-string-type"></emu-xref>.</p>
   </emu-clause>
 
   <emu-clause id="sec-is-all-white-space" type="abstract operation">
@@ -383,7 +346,7 @@ markEffects: true
     </dl>
     <emu-alg>
       1. Let _trimmed_ be ! TrimString(_str_, ~start~).
-      1. If _trimmed_ is *""*, return *true*.
+      1. If _trimmed_ is the empty String, return *true*.
       1. Return *false*.
     </emu-alg>
   </emu-clause>
@@ -400,7 +363,7 @@ markEffects: true
     <emu-alg>
       1. Let _aLen_ be the length of _a_.
       1. Let _bLen_ be the length of _b_.
-      1. If _aLen_ &lt; _bLen_, let _len_ be _aLen_; else let _len_ be _bLen_.
+      1. Let _len_ be min(_aLen_, _bLen_).
       1. Let _i_ be 0.
       1. Repeat, while _i_ &lt; _len_,
         1. Let _aChar_ be the substring of _a_ from _i_ to _i_ + 1.
@@ -419,33 +382,137 @@ markEffects: true
       CookTemplateStringsArray (
         _template_: an ECMAScript language value,
         _substitutions_: a List of ECMAScript language values,
+        _prep_: ~cooked~ or ~raw~,
       ): either a normal completion containing a String or a throw completion
     </h1>
     <dl class="header">
     </dl>
     <emu-note>
-      <p>This abstract operation is copied from the <a href="https://github.com/tc39/proposal-string-cooked">String.cooked proposal</a>.</p>
+      <p>This abstract operation merges the behaviour of `String.raw` with the <a href="https://github.com/tc39/proposal-string-cooked">String.cooked proposal</a>.</p>
     </emu-note>
     <emu-alg>
-      1. Let _numberOfSubstitutions_ be the number of elements in _substitutions_.
+      1. Let _substitutionCount_ be the number of elements in _substitutions_.
       1. Let _cooked_ be ? ToObject(_template_).
-      1. Let _literalSegments_ be ? LengthOfArrayLike(_cooked_).
-      1. If _literalSegments_ &le; 0, return the empty String.
-      1. Let _stringElements_ be a new empty List.
+      1. If _prep_ is ~cooked~, let _literals_ be _cooked_; else let _literals_ be ? ToObject(? Get(_cooked_, *"raw"*)).
+      1. Let _literalCount_ be ? LengthOfArrayLike(_literals_).
+      1. If _literalCount_ ≤ 0, return the empty String.
+      1. Let _R_ be the empty String.
       1. Let _nextIndex_ be 0.
       1. Repeat,
-        1. Let _nextKey_ be ! ToString(𝔽(_nextIndex_)).
-        1. Let _nextVal_ be ? Get(_cooked_, _nextKey_).
-        1. If Type(_nextVal_) is Undefined, throw a *TypeError* exception.
-        1. Let _nextSeg_ be ? ToString(_nextVal_).
-        1. Append the code unit elements of _nextSeg_ to the end of _stringElements_.
-        1. If _nextIndex_ + 1 = _literalSegments_, then
-          1. Return the String value whose code units are the elements in the List _stringElements_. If _stringElements_ has no elements, the empty String is returned.
-        1. If _nextIndex_ &lt; _numberOfSubstitutions_, let _next_ be _substitutions_[_nextIndex_].
-        1. Else, let _next_ be the empty String.
-        1. Let _nextSub_ be ? ToString(_next_).
-        1. Append the code unit elements of _nextSub_ to the end of _stringElements_.
+        1. Let _nextLiteralVal_ be ? Get(_literals_, ! ToString(𝔽(_nextIndex_))).
+        1. Let _nextLiteral_ be ? ToString(_nextLiteralVal_).
+        1. Set _R_ to the string-concatenation of _R_ and _nextLiteral_.
+        1. If _nextIndex_ + 1 = _literalCount_, return _R_.
+        1. If _nextIndex_ &lt; _substitutionCount_, then
+          1. Let _nextSubVal_ be _substitutions_[_nextIndex_].
+          1. Let _nextSub_ be ? ToString(_nextSubVal_).
+          1. Set _R_ to the string-concatenation of _R_ and _nextSub_.
         1. Set _nextIndex_ to _nextIndex_ + 1.
+    </emu-alg>
+  </emu-clause>
+</emu-clause>
+
+<emu-clause id="sec-code-realms">
+  <h1>Realms</h1>
+  <p>Before it is evaluated, all ECMAScript code must be associated with a <dfn id="realm" variants="realms">realm</dfn>. Conceptually, a realm consists of a set of intrinsic objects, an ECMAScript global environment, all of the ECMAScript code that is loaded within the scope of that global environment, and other associated state and resources.</p>
+  <p>A realm is represented in this specification as a <dfn id="realm-record" variants="Realm Records">Realm Record</dfn> with the fields specified in <emu-xref href="#table-realm-record-fields"></emu-xref>:</p>
+  <emu-table id="table-realm-record-fields" caption="Realm Record Fields" oldids="table-21">
+    <table>
+      <tr>
+        <th>
+          Field Name
+        </th>
+        <th>
+          Value
+        </th>
+        <th>
+          Meaning
+        </th>
+      </tr>
+      <tr>
+        <td>
+          [[Intrinsics]]
+        </td>
+        <td>
+          a Record whose field names are intrinsic keys and whose values are objects
+        </td>
+        <td>
+          The intrinsic values used by code associated with this realm
+        </td>
+      </tr>
+      <tr>
+        <td>
+          [[GlobalObject]]
+        </td>
+        <td>
+          an Object or *undefined*
+        </td>
+        <td>
+          The global object for this realm
+        </td>
+      </tr>
+      <tr>
+        <td>
+          [[GlobalEnv]]
+        </td>
+        <td>
+          a Global Environment Record
+        </td>
+        <td>
+          The global environment for this realm
+        </td>
+      </tr>
+      <tr>
+        <td>
+          [[TemplateMap]]
+        </td>
+        <td>
+          a List of Record { [[Site]]: Parse Node, [[Array]]: Object }
+        </td>
+        <td>
+          <p>Template objects are canonicalized separately for each realm using its Realm Record's [[TemplateMap]]. Each [[Site]] value is a Parse Node that is a |TemplateLiteral|. The associated [[Array]] value is the corresponding template object that is passed to a tag function.</p>
+          <emu-note>Once a Parse Node becomes unreachable, the corresponding [[Array]] is also unreachable, and it would be unobservable if an implementation removed the pair from the [[TemplateMap]] list.</emu-note>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          [[HostDefined]]
+        </td>
+        <td>
+          anything (default value is *undefined*)
+        </td>
+        <td>
+          Field reserved for use by hosts that need to associate additional information with a Realm Record.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <ins>[[DedentMap]]</ins>
+        </td>
+        <td>
+          <ins>a List of Record { [[Raw]]: Object, [[Dedented]]: Object }</ins>
+        </td>
+        <td>
+          <ins>
+            The [[DedentMap]] ensures template tag functions wrapped with `String.dedent` see consistent object identity for a given input template. The [[Raw]] key weakly holds the value of a template object's raw property. The associated [[Dedented]] value is the result of performing dedenting on that raw value.
+          </ins>
+        </td>
+      </tr>
+    </table>
+  </emu-table>
+
+  <emu-clause id="sec-createrealm" type="abstract operation">
+    <h1>CreateRealm ( ): a Realm Record</h1>
+    <dl class="header">
+    </dl>
+    <emu-alg>
+      1. Let _realmRec_ be a new Realm Record.
+      1. Perform CreateIntrinsics(_realmRec_).
+      1. Set _realmRec_.[[GlobalObject]] to *undefined*.
+      1. Set _realmRec_.[[GlobalEnv]] to *undefined*.
+      1. Set _realmRec_.[[TemplateMap]] to a new empty List.
+      1. <ins>Set _realmRec_.[[DedentMap]] to a new empty List.</ins>
+      1. Return _realmRec_.
     </emu-alg>
   </emu-clause>
 </emu-clause>
@@ -467,9 +534,10 @@ markEffects: true
         1. Set _r_.[[Value]] to ~empty~.
       1. For each WeakSet _set_ such that _set_.[[WeakSetData]] contains _obj_, do
         1. Replace the element of _set_.[[WeakSetData]] whose value is _obj_ with an element whose value is ~empty~.
-      1. <ins>If the GlobalDedentRegistry List contains a Record _r_ such that _r_.[[Key]] is _obj_, then</ins>
-        1. <ins>Set _r_.[[Key]] to ~empty~.</ins>
-        1. <ins>Set _r_.[[Value]] to ~empty~.</ins>
+      1. <ins>Let _realm_ be the current Realm Record.</ins>
+      1. <ins>If _realm_.[[DedentMap]] contains a Record _r_ such that _r_.[[Raw]] is _obj_, then</ins>
+        1. <ins>Set _r_.[[Raw]] to ~empty~.</ins>
+        1. <ins>Set _r_.[[Dedented]] to ~empty~.</ins>
   </emu-alg>
 
   <emu-note>
