@@ -50,7 +50,7 @@ markEffects: true
         1. Return CreateBuiltinFunction(_closure_, 1, *""*, &laquo; &raquo;).
       1. Let _template_ be _templateOrFn_.
       1. Let _dedented_ be ? DedentTemplateStringsArray(_template_).
-      1. Return ? CookTemplateStringsArray(_dedented_, _substitutions_).
+      1. Return ? CookTemplateStringsArray(_dedented_, _substitutions_, ~cooked~).
     </emu-alg>
     <emu-note>
       <p>The `dedent` function is intended for use as a tag function of a Tagged Template (<emu-xref href="#sec-tagged-templates"></emu-xref>). When called as such, the first argument will be a well formed template object and the rest parameter will contain the substitution values.</p>
