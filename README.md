@@ -170,7 +170,7 @@ String.dedent(pythonInterpreter)`
 
 - *CoffeeScript* - [block strings](https://coffeescript.org/#strings) using `'''` and `"""` triple-quotes.
 - *Java* - [text blocks](https://openjdk.java.net/jeps/378) using triple-quotes.
-- *Kotlin* - [raw strings](https://kotlinlang.org/docs/strings.html#raw-strings) using triple-quotes.
+- *Kotlin* - [raw strings](https://kotlinlang.org/docs/strings.html#raw-strings) using triple-quotes and `.trimIndent()`.
 - *Scala* - [multiline strings](https://docs.scala-lang.org/overviews/scala-book/two-notes-about-strings.html)
   using triple-quotes and `.stripMargin`.
 - *Python* - [multiline strings](https://docs.python.org/3/library/textwrap.html) using triple-quotes
