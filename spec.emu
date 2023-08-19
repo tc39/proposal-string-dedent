@@ -30,7 +30,7 @@ markEffects: true
     <emu-note>
       <p>The `String.dedent` function may be called with either a template array and a variable number of substitutions, or it may be called with a function which itself takes a template array and a variable number of substitutions.</p>
       <p>When called with a template and a variable number of substitutions, a string is returned which has common leading indentation removed from all lines with non-whitespace.</p>
-      <p>When called with a function, a closure is returned which wraps the function. When the closure is called with a template and variable number of substitutions, the common leading indentation of the temlpate is removed and the result of calling the function with this new dedented template and substitutions is returned.</p>
+      <p>When called with a function, a closure is returned which wraps the function. When the closure is called with a template and variable number of substitutions, the common leading indentation of the template is removed and the result of calling the function with this new dedented template and substitutions is returned.</p>
       <p>Common leading indentation is defined as the longest sequence of whitespace characters that match exactly on every line that contains non-whitespace. Empty lines and lines which contain only whitespace do not affect common leading indentation.</p>
       <p>When removing the common leading indentation, lines which contain only whitespace will have all whitespace removed.</p>
     </emu-note>
